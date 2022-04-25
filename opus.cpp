@@ -125,11 +125,16 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
 	       opus_result_t *solution, opus_settings_t *settings)
 {
     // Particles
+    double **pos_z = opus_matrix_new(settings->k_size, settings->dim);
     double **pos = opus_matrix_new(settings->size, settings->dim); // position matrix
     double **vel = opus_matrix_new(settings->size, settings->dim); // velocity matrix
     double **pos_b = opus_matrix_new(settings->size, settings->dim); // best position matrix
+    double *fit_z = (double *)malloc(settings->k_size * sizeof(double));
     double *fit = (double *)malloc(settings->size * sizeof(double));
     double *fit_b = (double *)malloc(settings->size * sizeof(double));
+
+    int epsilon_size = 100;
+    double **epsilon = opus_matrix_new(epsilon_size,settings->dim); // may need to extend the size, remember to also update epsilon size!!!!! 
 
     int i, d, step;
     double a, b; // for matrix initialization
@@ -147,9 +152,14 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     // INITIALIZE SOLUTION
     solution->error = DBL_MAX;
 
-
+    // Step 1-4 ------------------------------------------------------------------------------------
+    // TODO
     // SWARM INITIALIZATION
     // for each particle
+    for(i=0; i<settings->k_size;i++){
+        fit_z[i] = obj_fun(pos_z[i], settings->dim, obj_fun_params);
+    }
+
     for (i=0; i<settings->size; i++) {
         // for each dimension
         for (d=0; d<settings->dim; d++) {
@@ -176,8 +186,9 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             memmove((void *)solution->gbest, (void *)pos[i],
                     sizeof(double) * settings->dim);
         }
-
     }
+    //------------------------------------------------------------------------------------------------
+
 
     // RUN ALGORITHM
     for (step=0; step<settings->steps; step++) {
@@ -186,7 +197,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
         // update inertia weight
         // do not bother with calling a calc_w_const function
         if (calc_inertia_fun != NULL) {
-            w = calc_inertia_fun(step, settings);
+            w = calc_inertia_fun(step, settings);   // i(t) in the paper
         }
         // check optimization goal
         if (solution->error <= settings->goal) {
@@ -196,10 +207,17 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             break;
         }
 
-        // the value of improved was just used; reset it
+        // step 5: fit surrogate--------------------------------------------------------------
+        // TODO
+
+
+        // -----------------------------------------------------------------------------------
+
 
         // update all particles
         for (i=0; i<settings->size; i++) {
+            // step 6-----------------------------------------------------------------------------
+            // TODO
             // for each dimension
             for (d=0; d<settings->dim; d++) {
                 // calculate stochastic coefficients
@@ -222,7 +240,11 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
                 
 
             }
+            // -----------------------------------------------------------------------------------
 
+
+            // step 7-8 ---------------------------------------------------------------------------
+            // TODO
             // update particle fitness
             fit[i] = obj_fun(pos[i], settings->dim, obj_fun_params);
             // update personal best position?
@@ -231,7 +253,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
                 // copy contents of pos[i] to pos_b[i]
                 memmove((void *)pos_b[i], (void *)pos[i],
                         sizeof(double) * settings->dim);
-            }
+            }            
             // update gbest??
             if (fit[i] < solution->error) {
                 // update best fitness
@@ -240,6 +262,26 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
                 memmove((void *)solution->gbest, (void *)pos[i],
                         sizeof(double) * settings->dim);
             }
+            // -----------------------------------------------------------------------------------
+
+
+            // step 9 Refit surrogate-------------------------------------------------------------
+            // TODO
+
+            // -----------------------------------------------------------------------------------
+
+
+            // step 10----------------------------------------------------------------------------
+            // TODO
+
+            // -----------------------------------------------------------------------------------
+
+            // step 11----------------------------------------------------------------------------
+            // TODO
+            
+            // -----------------------------------------------------------------------------------
+
+
         }
 
         if (settings->print_every && (step % settings->print_every == 0))
@@ -248,9 +290,13 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     }
 
     // free resources
+    opus_matrix_free(pos_z, settings->size);
     opus_matrix_free(pos, settings->size);
     opus_matrix_free(vel, settings->size);
     opus_matrix_free(pos_b, settings->size);
+    opus_matrix_free(epsilon, epsilon_size);
+
+    free(fit_z);
     free(fit);
     free(fit_b);
 }

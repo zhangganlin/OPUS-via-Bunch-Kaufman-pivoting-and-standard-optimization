@@ -52,12 +52,6 @@ void findorder(const std::vector<T> & v, std::vector<int> & order)
 }
 
 
-double randfrom(double min, double max) 
-{
-    double range = (max - min); 
-    double div = RAND_MAX / range;
-    return min + (rand() / div);
-}
 
 
 void randomLHS(int n, int k, double ** matrix)
@@ -68,7 +62,7 @@ void randomLHS(int n, int k, double ** matrix)
     {
         for (int irow = 0; irow < n; irow++)
         {
-            randomunif1[irow] = randfrom(0,1);
+            randomunif1[irow] = (rand()/(double)RAND_MAX);
         }
         findorder<double>(randomunif1, orderVector);
         for (int irow = 0; irow < n; irow++)
