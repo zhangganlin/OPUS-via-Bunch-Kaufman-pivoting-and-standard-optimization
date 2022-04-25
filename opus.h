@@ -44,8 +44,6 @@ typedef struct {
     double w_max; // max inertia weight value
     double w_min; // min inertia weight value
 
-    int w_strategy; // inertia weight strategy (see PSO_W_*)
-
 } opus_settings_t;
 
 opus_settings_t *opus_settings_new(int dim, double range_lo, double range_hi);

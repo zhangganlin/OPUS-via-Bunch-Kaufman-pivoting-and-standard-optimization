@@ -1,8 +1,8 @@
 CC=g++
 CFLAGS=-Wall -g
-DEPS=opus.h
+DEPS=opus.h randomlhs.hpp
 
-SOURCE_FILES=$(shell find . -name '*.c')
+SOURCE_FILES=$(shell find . -name '*.cpp')
 OBJ_FILES=$(SOURCE_FILES:.c=.o) 
 LIB=-lm 
 
