@@ -3,7 +3,7 @@ CFLAGS=-Wall -g
 DEPS=opus.h randomlhs.hpp
 
 SOURCE_FILES=$(shell find . -name '*.cpp')
-OBJ_FILES=$(SOURCE_FILES:.c=.o) 
+OBJ_FILES=$(SOURCE_FILES:.cpp=.o) 
 LIB=-lm 
 
 %.o: %.c $(DEPS)
@@ -11,7 +11,7 @@ LIB=-lm
 	
 demo: $(OBJ_FILES)
 	$(CC) $^ -o $@ $(LIB)
-
+	rm -f ${OBJ_FILES}
 
 .PHONY: clean
 clean:

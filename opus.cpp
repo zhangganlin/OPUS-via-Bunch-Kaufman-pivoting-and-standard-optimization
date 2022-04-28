@@ -20,6 +20,12 @@
 typedef double (*inertia_fun_t)(int step, opus_settings_t *settings);
 
 
+
+int fz_compare(const void *a, const void *b){
+    if (*(double*)a>*(double*)b) return -1;
+    else return 1;
+}
+
 //==============================================================
 // calulate swarm size based on dimensionality
 int opus_calc_swarm_size(int dim) {
@@ -111,15 +117,17 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     double **pos = opus_matrix_new(settings->size, settings->dim); // position matrix
     double **vel = opus_matrix_new(settings->size, settings->dim); // velocity matrix
     double **pos_b = opus_matrix_new(settings->size, settings->dim); // best position matrix
-    double *fit_z = (double *)malloc(settings->k_size * sizeof(double));
+    fz_t *fit_z = (fz_t *)malloc(settings->k_size * sizeof(fz_t));
     double *fit = (double *)malloc(settings->size * sizeof(double));
     double *fit_b = (double *)malloc(settings->size * sizeof(double));
 
     int epsilon_size = 100;
     double **epsilon = opus_matrix_new(epsilon_size,settings->dim); // may need to extend the size, remember to also update epsilon size!!!!! 
+    int valid_epsilon_size;
+
 
     int i, d, step;
-    double a, b; // for matrix initialization
+    double u;
     double rho1, rho2; // random numbers (coefficients)
     // initialize omega using standard value
     double w = OPUS_INERTIA;
@@ -135,27 +143,27 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     solution->error = DBL_MAX;
 
     // Step 1-4 ------------------------------------------------------------------------------------
-    // TODO
     // SWARM INITIALIZATION
     // for each particle
+    randomLHS(settings->k_size,settings->dim,pos_z,*settings->range_lo,*settings->range_hi);
     for(i=0; i<settings->k_size;i++){
-        fit_z[i] = obj_fun(pos_z[i], settings->dim, obj_fun_params);
+        fit_z[i] = {obj_fun(pos_z[i], settings->dim, obj_fun_params),i};
     }
+    qsort(fit_z,settings->k_size,sizeof(fz_t),fz_compare); // from largest to smallest
+
 
     for (i=0; i<settings->size; i++) {
         // for each dimension
         for (d=0; d<settings->dim; d++) {
-            // generate two numbers within the specified range
-            a = settings->range_lo[d] + (settings->range_hi[d] - settings->range_lo[d]) * \
-                RNG_UNIFORM();
-            b = settings->range_lo[d] + (settings->range_hi[d] - settings->range_lo[d]) *	\
+            // generate one number within the specified range
+            u = settings->range_lo[d] + (settings->range_hi[d] - settings->range_lo[d]) * \
                 RNG_UNIFORM();
             // initialize position
-            pos[i][d] = a;
+            pos[i][d] = pos_z[fit_z[i].index][d];
             // best position is the same
-            pos_b[i][d] = a;
+            pos_b[i][d] = pos_z[fit_z[i].index][d];
             // initialize velocity
-            vel[i][d] = (a-b) / 2.;
+            vel[i][d] = (u-pos[i][d]) / 2.;
         }
         // update particle fitness
         fit[i] = obj_fun(pos[i], settings->dim, obj_fun_params);
@@ -169,6 +177,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
                     sizeof(double) * settings->dim);
         }
     }
+    valid_epsilon_size = 0;
     //------------------------------------------------------------------------------------------------
 
 

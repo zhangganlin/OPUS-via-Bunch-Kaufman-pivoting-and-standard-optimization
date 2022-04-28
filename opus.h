@@ -59,9 +59,11 @@ int opus_calc_swarm_size(int dim);
 void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
 	       opus_result_t *solution, opus_settings_t *settings);
 
-int double_compare(const void *a, const void *b){
-    if (*(double*)a>*(double*)b) return -1;
-    else return 1;
-}
+typedef struct{
+    double value;
+    int index;
+}fz_t;
+
+int fz_compare(const void *a, const void *b);
 
 #endif // OPUS_H_

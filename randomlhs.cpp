@@ -54,8 +54,9 @@ void findorder(const std::vector<T> & v, std::vector<int> & order)
 
 
 
-void randomLHS(int n, int k, double ** matrix)
-{
+void randomLHS(int n, int k, double ** matrix,  double range_lo, double range_hi)
+{   
+    double range = range_hi - range_lo;
     std::vector<int> orderVector = std::vector<int>(n);
     std::vector<double> randomunif1 = std::vector<double>(n);
     for (int jcol = 0; jcol < k; jcol++)
@@ -68,6 +69,7 @@ void randomLHS(int n, int k, double ** matrix)
         for (int irow = 0; irow < n; irow++)
         {
             matrix[irow][jcol] = orderVector[irow];
+            matrix[irow][jcol] = matrix[irow][jcol]/n*range+range_lo;
         }
     }
 }
