@@ -22,8 +22,8 @@ typedef double (*inertia_fun_t)(int step, opus_settings_t *settings);
 
 
 int fz_compare(const void *a, const void *b){
-    if (*(double*)a>*(double*)b) return -1;
-    else return 1;
+    if (*(double*)a>*(double*)b) return 1;
+    else return -1;
 }
 
 //==============================================================
@@ -78,6 +78,9 @@ opus_settings_t *opus_settings_new(int dim, double range_lo, double range_hi) {
     settings->c2 = 1.496;
     settings->w_max = OPUS_INERTIA;
     settings->w_min = 0.3;
+    settings->k_size = settings->size*2;
+    settings->r = 10;
+    settings->delta = (range_hi-range_lo)/100.0;
 
     return settings;
 }
@@ -98,6 +101,14 @@ double **opus_matrix_new(int size, int dim) {
     return m;
 }
 
+double ** opus_matrix_extend(int old_size, int dim, double** matrix) {
+    matrix = (double **)realloc(matrix,2*old_size * sizeof(double *));
+    for (int i=old_size; i<2*old_size; i++) {
+        matrix[i] = (double *)malloc(dim * sizeof(double));
+    }
+    return matrix;
+}
+
 void opus_matrix_free(double **m, int size) {
     for (int i=0; i<size; i++) {
         free(m[i]);
@@ -115,19 +126,26 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     // Particles
     double **pos_z = opus_matrix_new(settings->k_size, settings->dim);
     double **pos = opus_matrix_new(settings->size, settings->dim); // position matrix
+    double **temp_pos = opus_matrix_new(settings->r, settings->dim);
+    double **temp_vel = opus_matrix_new(settings->r, settings->dim);
     double **vel = opus_matrix_new(settings->size, settings->dim); // velocity matrix
     double **pos_b = opus_matrix_new(settings->size, settings->dim); // best position matrix
     fz_t *fit_z = (fz_t *)malloc(settings->k_size * sizeof(fz_t));
     double *fit = (double *)malloc(settings->size * sizeof(double));
     double *fit_b = (double *)malloc(settings->size * sizeof(double));
+    double *temp_result = (double *)malloc(settings->r * sizeof(double));
+    double *x_optimized = (double *)malloc(settings->dim * sizeof(double));
 
     int epsilon_size = 100;
     double **epsilon = opus_matrix_new(epsilon_size,settings->dim); // may need to extend the size, remember to also update epsilon size!!!!! 
     int valid_epsilon_size;
 
 
-    int i, d, step;
+    int i, d, step, l, temp_idx, j;
     double u;
+    double temp_res_max;
+    double min_dist, temp_dist;
+    double f_opt;
     double rho1, rho2; // random numbers (coefficients)
     // initialize omega using standard value
     double w = OPUS_INERTIA;
@@ -149,7 +167,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     for(i=0; i<settings->k_size;i++){
         fit_z[i] = {obj_fun(pos_z[i], settings->dim, obj_fun_params),i};
     }
-    qsort(fit_z,settings->k_size,sizeof(fz_t),fz_compare); // from largest to smallest
+    qsort(fit_z,settings->k_size,sizeof(fz_t),fz_compare); // fit_z[0] with smallest f value
 
 
     for (i=0; i<settings->size; i++) {
@@ -208,34 +226,47 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
         // update all particles
         for (i=0; i<settings->size; i++) {
             // step 6-----------------------------------------------------------------------------
-            // TODO
-            // for each dimension
-            for (d=0; d<settings->dim; d++) {
-                // calculate stochastic coefficients
-                rho1 = settings->c1 * RNG_UNIFORM();
-                rho2 = settings->c2 * RNG_UNIFORM();
-                // update velocity
-                vel[i][d] = w * vel[i][d] +	\
-                    rho1 * (pos_b[i][d] - pos[i][d]) +	\
-                    rho2 * (solution->gbest[d] - pos[i][d]);
-                // update position
-                pos[i][d] += vel[i][d];
-                // clamp position within bounds
-                if (pos[i][d] < settings->range_lo[d]) {
-                    pos[i][d] = settings->range_lo[d];
-                    vel[i][d] = 0;
-                } else if (pos[i][d] > settings->range_hi[d]) {
-                    pos[i][d] = settings->range_hi[d];
-                    vel[i][d] = 0;
+            // 6a
+            for(l=0; l<settings->r; l++){
+                for (d=0; d<settings->dim; d++) {
+                    // calculate stochastic coefficients
+                    rho1 = settings->c1 * RNG_UNIFORM();
+                    rho2 = settings->c2 * RNG_UNIFORM();
+                    // update velocity
+                    temp_vel[l][d] = w * vel[i][d] +	\
+                        rho1 * (pos_b[i][d] - pos[i][d]) +	\
+                        rho2 * (solution->gbest[d] - pos[i][d]);
+                    // update position
+                    temp_pos[l][d] = pos[i][d] + temp_vel[l][d];
+                    // clamp position within bounds
+                    if (temp_pos[l][d] < settings->range_lo[d]) {
+                        temp_pos[l][d] = settings->range_lo[d];
+                        temp_vel[l][d] = 0;
+                    } else if (temp_pos[l][d] > settings->range_hi[d]) {
+                        temp_pos[l][d] = settings->range_hi[d];
+                        temp_pos[l][d] = 0;
+                    }
                 }
-                
-
             }
+            //6b TODO need to fuse the surrogate code
+            // // using surrogate model here
+            // surrogate_model(temp_pos,temp_result);
+            temp_idx = 0;
+            temp_res_max = temp_result[temp_idx];
+            for(l = 0; l < settings->r; l++){
+                if(temp_result[l]>temp_res_max){
+                    temp_idx = l;
+                    temp_res_max = temp_result[l];
+                }
+            }
+            memmove((void *)pos[i], (void *)temp_pos[temp_idx],
+                        sizeof(double) * settings->dim);
+            memmove((void *)vel[i], (void *)temp_vel[temp_idx],
+                        sizeof(double) * settings->dim);
             // -----------------------------------------------------------------------------------
 
 
             // step 7-8 ---------------------------------------------------------------------------
-            // TODO
             // update particle fitness
             fit[i] = obj_fun(pos[i], settings->dim, obj_fun_params);
             // update personal best position?
@@ -269,6 +300,30 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
 
             // step 11----------------------------------------------------------------------------
             // TODO
+            min_dist = 0;
+            for(j = 0; j < valid_epsilon_size; j++){
+                temp_dist = 0;
+                for(d = 0; d < settings->dim; d++){
+                    temp_dist += (x_optimized[d] - epsilon[j][d])*(x_optimized[d] - epsilon[j][d]);
+                }
+                min_dist = min_dist<temp_dist? min_dist:temp_dist;
+            }
+
+            if(min_dist<settings->delta*settings->delta){
+                f_opt = obj_fun(x_optimized,settings->dim,obj_fun_params);
+                if(f_opt<solution->error){
+                    solution->error = f_opt;
+                    memmove((void *)solution->gbest, (void *)x_optimized,
+                        sizeof(double) * settings->dim);
+                }
+                if(valid_epsilon_size>=epsilon_size){
+                    epsilon = opus_matrix_extend(epsilon_size,settings->dim,epsilon);
+                    epsilon_size += epsilon_size;
+                }
+                memmove((void *)epsilon[valid_epsilon_size], (void *)x_optimized,
+                        sizeof(double) * settings->dim);
+                valid_epsilon_size ++;
+            }
             
             // -----------------------------------------------------------------------------------
 
@@ -286,8 +341,13 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     opus_matrix_free(vel, settings->size);
     opus_matrix_free(pos_b, settings->size);
     opus_matrix_free(epsilon, epsilon_size);
+    opus_matrix_free(temp_pos,settings->r);
+    opus_matrix_free(temp_vel,settings->r);
+
 
     free(fit_z);
     free(fit);
     free(fit_b);
+    free(temp_result);
+    free(x_optimized);
 }

@@ -40,10 +40,12 @@ typedef struct {
     int print_every; // ... N steps (set to 0 for no output)
     int steps; // maximum number of iterations
     int step; // current PSO step
+    int r; // number of trial positions for each particle
     double c1; // cognitive coefficient
     double c2; // social coefficient
     double w_max; // max inertia weight value
     double w_min; // min inertia weight value
+    double delta; // threshold distance for determining if one point is too close to another point
 
 } opus_settings_t;
 
