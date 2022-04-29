@@ -145,7 +145,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
 
     int i, d, step, l, temp_idx, j;
     double u;
-    double temp_res_max;
+    double temp_res_min;
     double min_dist, temp_dist;
     double f_opt;
     double rho1, rho2; // random numbers (coefficients)
@@ -257,11 +257,11 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             }
 
             temp_idx = 0;
-            temp_res_max = temp_result[temp_idx];
+            temp_res_min = temp_result[temp_idx];
             for(l = 0; l < settings->r; l++){
-                if(temp_result[l]>temp_res_max){
+                if(temp_result[l]<temp_res_min){
                     temp_idx = l;
-                    temp_res_max = temp_result[l];
+                    temp_res_min = temp_result[l];
                 }
             }
             memmove((void *)pos[i], (void *)temp_pos[temp_idx],
