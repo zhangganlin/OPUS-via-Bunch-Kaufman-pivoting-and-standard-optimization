@@ -165,7 +165,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     // for each particle
     randomLHS(settings->k_size,settings->dim,pos_z,*settings->range_lo,*settings->range_hi);
     for(i=0; i<settings->k_size;i++){
-        fit_z[i] = {obj_fun(pos_z[i], settings->dim, obj_fun_params),i};
+        fit_z[i] = (fz_t){obj_fun(pos_z[i], settings->dim, obj_fun_params),i};
     }
     qsort(fit_z,settings->k_size,sizeof(fz_t),fz_compare); // fit_z[0] with smallest f value
 
