@@ -1,3 +1,5 @@
 *.o
 demo
 .vscode/*
+build/*
+.DS_Store

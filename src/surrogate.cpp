@@ -1,5 +1,4 @@
-#include <iostream>
-#include <Eigen/Dense>
+#include "surrogate.hpp"
 using namespace std;
 
 void get_eigen_matrix(const double* mat_d, Eigen::MatrixXd& mat_e, int m, int n){
@@ -50,7 +49,6 @@ void build_surrogate(const Eigen::MatrixXd& points, const Eigen::VectorXd& f, Ei
     } 
     A <<    phi             , poly,
             poly.adjoint()  , zeros;
-    cout << A << endl;
     Eigen::VectorXd b(N + d + 1);
     b << f, zeros_vec;
     lambda_c = A.colPivHouseholderQr().solve(b);
@@ -75,6 +73,7 @@ double evaluate_surrogate(const double* x, const double* points, const double* l
         }
         phi = sqrt(phi);
         phi = phi * phi * phi;
+        // optimize: phi = sqrt(phi) * phi;
         cout << phi << " ";
         res += phi * lambda_c[i];
     }
@@ -84,16 +83,4 @@ double evaluate_surrogate(const double* x, const double* points, const double* l
     }
     res += lambda_c[N + d];
     return res;
-}
-
-int main(){
-    double points[6] = {1, 1, 4, 5, 3, 3};
-    double f[3] = {1, 2, 3};
-    int N = 3, d = 2;
-    double* lambda_c = (double*)malloc((N + d + 1) * sizeof(double));;
-    build_surrogate_eigen(points, f, 3, 2, lambda_c);
-    double x[2] = {3, 3};
-    cout << evaluate_surrogate(x, points, lambda_c, N, d) << endl;
-
-    return 0;
 }

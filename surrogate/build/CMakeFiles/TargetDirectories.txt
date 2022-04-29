@@ -1,3 +1,0 @@
-/Users/zdh/Documents/GitHub/team22/surrogate/build/CMakeFiles/rebuild_cache.dir
-/Users/zdh/Documents/GitHub/team22/surrogate/build/CMakeFiles/edit_cache.dir
-/Users/zdh/Documents/GitHub/team22/surrogate/build/CMakeFiles/surrogate.dir
