@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 
 project(OPUS)
 
-set(CXX_FLAGS -o3)
+# set(CXX_FLAGS -o3)
 
 enable_testing()
 

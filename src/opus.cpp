@@ -154,7 +154,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     inertia_fun_t calc_inertia_fun = NULL; // inertia weight update function
 
     // initialize random seed
-    srand(time(NULL));
+    srand(2);
 
     // SELECT APPROPRIATE INERTIA WEIGHT UPDATE FUNCTION
     calc_inertia_fun = calc_inertia_lin_dec;
@@ -222,6 +222,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
 
         // step 5: fit surrogate--------------------------------------------------------------
         build_surrogate_eigen(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
+        // build_surrogate(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
         // -----------------------------------------------------------------------------------
 
 
@@ -308,6 +309,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
 
         // step 9 Refit surrogate-------------------------------------------------------------
         build_surrogate_eigen(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
+        // build_surrogate(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
         // -----------------------------------------------------------------------------------
 
         // step 10----------------------------------------------------------------------------
