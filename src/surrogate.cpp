@@ -78,6 +78,52 @@ void build_surrogate_eigen(double** points,  double* f, int N, int d, double* la
     free(points_1d);
 }
 
+void build_surrogate(double* points, double* f, int N, int d, double* lambda_c){
+    double* A = (double*)malloc((N + d + 1)*(N + d + 1)*sizeof(double));
+    double* b = (double*)malloc((N + d + 1)*sizeof(double));
+    double phi, error;
+    memset(A, 0, (N + d + 1)*(N + d + 1)*sizeof(double));
+    memset(b, 0, (N + d + 1)*sizeof(double));
+    for(int i = 0; i < N; i++){
+        for(int j = 0; j < d; j++){
+            A[i * (N + d + 1) + N + j] = points[i * d + j];
+            A[(N + j) * (N + d + 1) + i] = points[i * d + j];
+        }
+        A[i * (N + d + 1) + N + d] = 1;
+        A[(N + d) * (N + d + 1) + i] = 1;
+    }
+    
+    for(int pa = 0; pa < N; pa++){
+        for(int pb = pa; pb < N; pb++){
+            phi = 0;
+            for(int j = 0; j < d; j++){
+                error = points[pa * d + j] - points[pb * d + j];
+                phi += error * error;
+            }
+            phi = sqrt(phi);
+            phi = phi * phi * phi;
+            A[pa * (N + d + 1) + pb] = phi;
+            A[pb * (N + d + 1) + pa] = phi;
+        }
+    }
+    for(int i = 0; i < N; i++) b[i] = f[i];
+    Eigen::MatrixXd A_e;
+    Eigen::VectorXd b_e, lambda_c_e;
+    get_eigen_matrix(A, A_e, N + d + 1, N + d + 1);
+    get_eigen_vector(b, b_e, N + d + 1);
+    free(A);
+    free(b);
+    lambda_c_e = A_e.colPivHouseholderQr().solve(b_e);
+    get_double_vector(lambda_c, lambda_c_e, N + d + 1);
+}
+
+void build_surrogate(double** points, double* f, int N, int d, double* lambda_c){
+    double* points_1d = (double*)malloc((N*d) * sizeof(double));
+    get_1d_mat(points, points_1d, N, d);
+    build_surrogate(points_1d, f, N, d, lambda_c);
+    free(points_1d);
+}
+
 double evaluate_surrogate( double* x, double* points,  double* lambda_c, int N, int d){
     double phi, error, res = 0;
     for(int i = 0; i < N; i++){
