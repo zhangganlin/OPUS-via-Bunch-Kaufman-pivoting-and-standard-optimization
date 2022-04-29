@@ -7,7 +7,7 @@
 #include <string.h> // for mem*
 
 #include "opus.h"
-
+#include "surrogate.hpp"
 #include "randomlhs.hpp"
 
 // generates a double between (0, 1)
@@ -136,9 +136,11 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     double *temp_result = (double *)malloc(settings->r * sizeof(double));
     double *x_optimized = (double *)malloc(settings->dim * sizeof(double));
 
-    int epsilon_size = 100;
-    double **epsilon = opus_matrix_new(epsilon_size,settings->dim); // may need to extend the size, remember to also update epsilon size!!!!! 
-    int valid_epsilon_size;
+    int x_history_size = settings->size*100;
+    double **x_history = opus_matrix_new(x_history_size,settings->dim);
+    double* lambda_c = (double*)malloc((x_history_size + settings->dim + 1) * sizeof(double));
+    double* f_history = (double*)malloc((x_history_size) * sizeof(double));
+    int valid_x_history_size;
 
 
     int i, d, step, l, temp_idx, j;
@@ -169,6 +171,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     }
     qsort(fit_z,settings->k_size,sizeof(fz_t),fz_compare); // fit_z[0] with smallest f value
 
+    valid_x_history_size = 0;
 
     for (i=0; i<settings->size; i++) {
         // for each dimension
@@ -178,6 +181,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
                 RNG_UNIFORM();
             // initialize position
             pos[i][d] = pos_z[fit_z[i].index][d];
+            x_history[i][d] = pos_z[fit_z[i].index][d];
             // best position is the same
             pos_b[i][d] = pos_z[fit_z[i].index][d];
             // initialize velocity
@@ -195,7 +199,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
                     sizeof(double) * settings->dim);
         }
     }
-    valid_epsilon_size = 0;
+    valid_x_history_size = settings->size;
     //------------------------------------------------------------------------------------------------
 
 
@@ -217,14 +221,12 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
         }
 
         // step 5: fit surrogate--------------------------------------------------------------
-        // TODO
-
-
+        build_surrogate_eigen(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
         // -----------------------------------------------------------------------------------
 
 
         // update all particles
-        for (i=0; i<settings->size; i++) {
+        for (i=0; i<settings->size; i++) {       
             // step 6-----------------------------------------------------------------------------
             // 6a
             for(l=0; l<settings->r; l++){
@@ -248,9 +250,12 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
                     }
                 }
             }
-            //6b TODO need to fuse the surrogate code
-            // // using surrogate model here
-            // surrogate_model(temp_pos,temp_result);
+            //6b
+            //using surrogate model here
+            for(l = 0; l < settings->r; l++){
+                temp_result[l] = evaluate_surrogate(temp_pos[l],x_history,lambda_c,valid_x_history_size,settings->dim);
+            }
+
             temp_idx = 0;
             temp_res_max = temp_result[temp_idx];
             for(l = 0; l < settings->r; l++){
@@ -263,12 +268,25 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
                         sizeof(double) * settings->dim);
             memmove((void *)vel[i], (void *)temp_vel[temp_idx],
                         sizeof(double) * settings->dim);
+            
+            if (valid_x_history_size>=x_history_size){
+                x_history = opus_matrix_extend(x_history_size,settings->dim,x_history);
+                f_history = (double*)realloc(f_history,x_history_size*2*sizeof(double));
+                lambda_c = (double*)realloc(lambda_c,(x_history_size*2 + settings->dim + 1) * sizeof(double));
+                x_history_size += x_history_size;
+            }
+            memmove((void *)x_history[valid_x_history_size], (void *)temp_pos[temp_idx],
+                        sizeof(double) * settings->dim);
+
             // -----------------------------------------------------------------------------------
 
 
             // step 7-8 ---------------------------------------------------------------------------
             // update particle fitness
             fit[i] = obj_fun(pos[i], settings->dim, obj_fun_params);
+            f_history[valid_x_history_size] = fit[i];
+            valid_x_history_size ++;
+
             // update personal best position?
             if (fit[i] < fit_b[i]) {
                 fit_b[i] = fit[i];
@@ -286,48 +304,52 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             }
             // -----------------------------------------------------------------------------------
 
-
-            // step 9 Refit surrogate-------------------------------------------------------------
-            // TODO
-
-            // -----------------------------------------------------------------------------------
-
-
-            // step 10----------------------------------------------------------------------------
-            // TODO
-
-            // -----------------------------------------------------------------------------------
-
-            // step 11----------------------------------------------------------------------------
-            min_dist = 0;
-            for(j = 0; j < valid_epsilon_size; j++){
-                temp_dist = 0;
-                for(d = 0; d < settings->dim; d++){
-                    temp_dist += (x_optimized[d] - epsilon[j][d])*(x_optimized[d] - epsilon[j][d]);
-                }
-                min_dist = min_dist<temp_dist? min_dist:temp_dist;
-            }
-
-            if(min_dist<settings->delta*settings->delta){
-                f_opt = obj_fun(x_optimized,settings->dim,obj_fun_params);
-                if(f_opt<solution->error){
-                    solution->error = f_opt;
-                    memmove((void *)solution->gbest, (void *)x_optimized,
-                        sizeof(double) * settings->dim);
-                }
-                if(valid_epsilon_size>=epsilon_size){
-                    epsilon = opus_matrix_extend(epsilon_size,settings->dim,epsilon);
-                    epsilon_size += epsilon_size;
-                }
-                memmove((void *)epsilon[valid_epsilon_size], (void *)x_optimized,
-                        sizeof(double) * settings->dim);
-                valid_epsilon_size ++;
-            }
-            
-            // -----------------------------------------------------------------------------------
-
-
         }
+
+        // step 9 Refit surrogate-------------------------------------------------------------
+        build_surrogate_eigen(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
+        // -----------------------------------------------------------------------------------
+
+        // step 10----------------------------------------------------------------------------
+        // TODO
+
+        // -----------------------------------------------------------------------------------
+
+        // step 11----------------------------------------------------------------------------
+        min_dist = 0;
+        for(j = 0; j < valid_x_history_size; j++){
+            temp_dist = 0;
+            for(d = 0; d < settings->dim; d++){
+                temp_dist += (x_optimized[d] - x_history[j][d])*(x_optimized[d] - x_history[j][d]);
+            }
+            min_dist = min_dist<temp_dist? min_dist:temp_dist;
+        }
+
+        if(min_dist > settings->delta*settings->delta){
+            f_opt = obj_fun(x_optimized,settings->dim,obj_fun_params);
+            if(f_opt<solution->error){
+                solution->error = f_opt;
+                memmove((void *)solution->gbest, (void *)x_optimized,
+                    sizeof(double) * settings->dim);
+            }
+
+            if (valid_x_history_size>=x_history_size){
+                x_history = opus_matrix_extend(x_history_size,settings->dim,x_history);
+                f_history = (double*)realloc(f_history,x_history_size*2*sizeof(double));
+                lambda_c = (double*)realloc(lambda_c,(x_history_size*2 + settings->dim + 1) * sizeof(double));
+                x_history_size += x_history_size;
+            }
+            memmove((void *)x_history[valid_x_history_size], (void *)x_optimized,
+                        sizeof(double) * settings->dim);
+
+            f_history[valid_x_history_size] = f_opt;
+            valid_x_history_size ++;
+        }
+        
+        // -----------------------------------------------------------------------------------
+
+
+        
 
         if (settings->print_every && (step % settings->print_every == 0))
             printf("Step %d (w=%.2f) :: min err=%.5e\n", step, w, solution->error);
@@ -339,14 +361,15 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     opus_matrix_free(pos, settings->size);
     opus_matrix_free(vel, settings->size);
     opus_matrix_free(pos_b, settings->size);
-    opus_matrix_free(epsilon, epsilon_size);
     opus_matrix_free(temp_pos,settings->r);
     opus_matrix_free(temp_vel,settings->r);
-
+    opus_matrix_free(x_history,x_history_size);
 
     free(fit_z);
     free(fit);
     free(fit_b);
     free(temp_result);
     free(x_optimized);
+    free(lambda_c);
+    free(f_history);
 }

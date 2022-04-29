@@ -13,7 +13,7 @@ int main(){
     double* lambda_c = (double*)malloc((N + d + 1) * sizeof(double));
 
     build_surrogate_eigen(points, f, 3, 2, lambda_c);
-    double x[2] = {3, 3};
+    double x[2] = {4, 5};
     cout << evaluate_surrogate(x, points, lambda_c, N, d) << endl;
 
     return 0;

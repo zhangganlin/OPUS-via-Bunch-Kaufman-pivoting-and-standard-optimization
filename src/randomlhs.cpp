@@ -1,3 +1,6 @@
+#ifndef RANDOMLHS_H_
+#define RANDOMLHS_H_
+
 #include "randomlhs.hpp"
 
 template <class T>
@@ -74,3 +77,4 @@ void randomLHS(int n, int k, double ** matrix,  double range_lo, double range_hi
     }
 }
     
+# endif

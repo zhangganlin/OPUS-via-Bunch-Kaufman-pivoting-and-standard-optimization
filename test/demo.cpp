@@ -64,7 +64,7 @@ int main(int argc, char **argv) {
     settings->size = 30;
     settings->k_size = 35;
     settings->r = 10;
-    settings->print_every = 10;
+    settings->print_every = 1;
     opus_result_t solution;
     solution.gbest = (double *)malloc(settings->dim * sizeof(double));
     opus_solve(obj_fun, NULL, &solution, settings);
