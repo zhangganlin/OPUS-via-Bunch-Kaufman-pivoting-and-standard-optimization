@@ -82,8 +82,8 @@ void build_surrogate(double* points, double* f, int N, int d, double* lambda_c){
     double* A = (double*)malloc((N + d + 1)*(N + d + 1)*sizeof(double));
     double* b = (double*)malloc((N + d + 1)*sizeof(double));
     double phi, error;
-    memset(A, 0, (N + d + 1)*(N + d + 1)*sizeof(double));
-    memset(b, 0, (N + d + 1)*sizeof(double));
+    memset(A, 0, (N + d + 1) * (N + d + 1) * sizeof(double));
+    memset(b, 0, (N + d + 1) * sizeof(double));
     for(int i = 0; i < N; i++){
         for(int j = 0; j < d; j++){
             A[i * (N + d + 1) + N + j] = points[i * d + j];
@@ -94,7 +94,7 @@ void build_surrogate(double* points, double* f, int N, int d, double* lambda_c){
     }
     
     for(int pa = 0; pa < N; pa++){
-        for(int pb = pa; pb < N; pb++){
+        for(int pb = 0; pb < N; pb++){
             phi = 0;
             for(int j = 0; j < d; j++){
                 error = points[pa * d + j] - points[pb * d + j];
@@ -103,9 +103,25 @@ void build_surrogate(double* points, double* f, int N, int d, double* lambda_c){
             phi = sqrt(phi);
             phi = phi * phi * phi;
             A[pa * (N + d + 1) + pb] = phi;
-            A[pb * (N + d + 1) + pa] = phi;
         }
     }
+    
+    // optimized
+    // for(int pa = 0; pa < N; pa++){
+    //     A[pa * (N + d + 1) + pa] = 0;
+    //     for(int pb = pa + 1; pb < N; pb++){
+    //         phi = 0;
+    //         for(int j = 0; j < d; j++){
+    //             error = points[pa * d + j] - points[pb * d + j];
+    //             phi += error * error;
+    //         }
+    //         phi = sqrt(phi);
+    //         phi = phi * phi * phi;
+    //         A[pa * (N + d + 1) + pb] = phi;
+    //         A[pb * (N + d + 1) + pa] = phi;
+    //     }
+    // }
+
     for(int i = 0; i < N; i++) b[i] = f[i];
     Eigen::MatrixXd A_e;
     Eigen::VectorXd b_e, lambda_c_e;
