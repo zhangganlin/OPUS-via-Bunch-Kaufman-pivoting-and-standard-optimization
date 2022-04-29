@@ -20,6 +20,10 @@ void build_surrogate_eigen( double* points,  double* f, int N, int d, double* la
 
 void build_surrogate_eigen(double** points,  double* f, int N, int d, double* lambda_c);
 
+void build_surrogate(double* points, double* f, int N, int d, double* lambda_c);
+
+void build_surrogate(double** points, double* f, int N, int d, double* lambda_c);
+
 double evaluate_surrogate( double* x,  double* points,  double* lambda_c, int N, int d);
 
 double evaluate_surrogate( double* x, double** points,  double* lambda_c, int N, int d);
