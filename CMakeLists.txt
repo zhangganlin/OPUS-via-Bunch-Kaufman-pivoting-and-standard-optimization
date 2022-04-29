@@ -9,6 +9,7 @@ enable_testing()
 set(CMAKE_CXX_STANDARD 14)
 
 # find_package(Ceres REQUIRED)
+find_package (Eigen3 REQUIRED)
 
 add_definitions(-DPROJECT_ROOT_DIR="${PROJECT_SOURCE_DIR}")
 
@@ -31,9 +32,13 @@ add_executable(demo ${SOURCES})
 add_executable(test_surrogate ${TEST_SURROGATE_SOURCES})
 
 
-include_directories(
-    "/usr/include/eigen3"
-)
+target_link_libraries (demo Eigen3::Eigen)
+target_link_libraries (test_surrogate Eigen3::Eigen)
+
+
+# include_directories(
+#     "/usr/include/eigen3"
+# )
 
 
 target_include_directories(demo
