@@ -93,21 +93,24 @@ void build_surrogate(double* points, double* f, int N, int d, double* lambda_c){
         A[(N + d) * (N + d + 1) + i] = 1;
     }
     
+    // flops: N * N * (3d + 3)
     for(int pa = 0; pa < N; pa++){
         for(int pb = 0; pb < N; pb++){
             phi = 0;
+            // flops: 3d
             for(int j = 0; j < d; j++){
                 error = points[pa * d + j] - points[pb * d + j];
                 phi += error * error;
             }
-            phi = sqrt(phi);
-            phi = phi * phi * phi;
+            phi = sqrt(phi); //1
+            phi = phi * phi * phi; //2
             A[pa * (N + d + 1) + pb] = phi;
         }
     }
     
     // optimized
     // for(int pa = 0; pa < N; pa++){
+    //     A already set to zero
     //     A[pa * (N + d + 1) + pa] = 0;
     //     for(int pb = pa + 1; pb < N; pb++){
     //         phi = 0;
@@ -141,21 +144,26 @@ void build_surrogate(double** points, double* f, int N, int d, double* lambda_c)
 }
 
 double evaluate_surrogate( double* x, double* points,  double* lambda_c, int N, int d){
+    // total flops: 3Nd + 5N + 2d + 1
     double phi, error, res = 0;
+    // flops: 3Nd + 5N
     for(int i = 0; i < N; i++){
         phi = 0;
+        // flops: 3d
         for(int j = 0; j < d; j++){
             error = x[j] - points[i * d + j];
             phi += error * error;
         }
-        phi = sqrt(phi);
-        phi = phi * phi * phi;
+        phi = sqrt(phi);            // flops: 1
+        phi = phi * phi * phi;      // flops: 2
         // optimize: phi = sqrt(phi) * phi;
-        res += phi * lambda_c[i];
+        res += phi * lambda_c[i];   // flops: 2
     }
+    // flops: 2d
     for(int i = 0; i < d; i++){
         res += x[i] * lambda_c[N + i];
     }
+    // flops: 1
     res += lambda_c[N + d];
     return res;
 }
