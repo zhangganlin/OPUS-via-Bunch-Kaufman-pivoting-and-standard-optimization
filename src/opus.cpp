@@ -252,10 +252,10 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
                     // clamp position within bounds
                     if (temp_pos[l][d] < settings->range_lo[d]) {
                         temp_pos[l][d] = settings->range_lo[d];
-                        temp_vel[l][d] = 0;
+                        // temp_vel[l][d] = 0;
                     } else if (temp_pos[l][d] > settings->range_hi[d]) {
                         temp_pos[l][d] = settings->range_hi[d];
-                        temp_vel[l][d] = 0;
+                        // temp_vel[l][d] = 0;
                     }
                 }
             }
