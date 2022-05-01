@@ -142,7 +142,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     double *x_optimized = (double *)malloc(settings->dim * sizeof(double));
     double *gd = opus_vector_new(settings->dim);  
     double *diff = opus_vector_new(settings->dim); 
-
+    double* x_star = (double*)malloc(settings->dim*sizeof(double));
 
     int x_history_size = settings->size*100;
     double **x_history = opus_matrix_new(x_history_size,settings->dim);
@@ -263,6 +263,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             //using surrogate model here
             for(l = 0; l < settings->r; l++){
                 temp_result[l] = evaluate_surrogate(temp_pos[l],x_history,lambda_c,valid_x_history_size,settings->dim);
+                printf("surrogate result: %f\n",temp_result[l]);
             }
 
             temp_idx = 0;
@@ -322,7 +323,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
 
         // step 10----------------------------------------------------------------------------
         //initialize
-        double* x_star = (double*)malloc(settings->dim*sizeof(double));
+        
         for(i = 0; i < settings->dim; i++){
             x_star[i] = solution->gbest[i];
         }
@@ -378,7 +379,10 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             //seperate for simplicity   
             for(j = 0; j < settings->dim; j++){
                 x_star[j] = x_star[j] - step_size * gd[j];
-            }         
+            } 
+            // printf("step_size: %f\n", step_size);
+            // printf("gd: %f %f\n", gd[0],gd[1]);
+            // printf("x_star: %f %f\n", x_star[0],x_star[1]);
              
             //projection
             for(j = 0; j < settings->dim; j++){
@@ -395,7 +399,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
         
         //record
         for(j = 0; j < settings->dim; j++){   
-            x_optimized[d] = x_star[j];
+            x_optimized[j] = x_star[j];
         }
 
 
@@ -461,4 +465,5 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     free(f_history);
     free(gd);
     free(diff);
+    free(x_star);
 }
