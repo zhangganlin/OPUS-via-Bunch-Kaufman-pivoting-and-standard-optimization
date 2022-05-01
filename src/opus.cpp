@@ -214,6 +214,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     qsort(fit_z,settings->k_size,sizeof(fz_t),fz_compare); // fit_z[0] with smallest f value
 
     valid_x_history_size = 0;
+    this_round_x_history_size = 0;
 
     for (i=0; i<settings->size; i++) {
         // for each dimension
@@ -242,6 +243,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
         }
     }
     valid_x_history_size = settings->size;
+    this_round_x_history_size = valid_x_history_size;
     //------------------------------------------------------------------------------------------------
 
 
@@ -265,6 +267,8 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
         // step 5: fit surrogate--------------------------------------------------------------
         build_surrogate_eigen(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
         // build_surrogate(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
+
+        this_round_x_history_size = valid_x_history_size;
         // -----------------------------------------------------------------------------------
 
 
@@ -296,7 +300,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             //6b
             //using surrogate model here
             for(l = 0; l < settings->r; l++){
-                temp_result[l] = evaluate_surrogate(temp_pos[l],x_history,lambda_c,valid_x_history_size,settings->dim);
+                temp_result[l] = evaluate_surrogate(temp_pos[l],x_history,lambda_c,this_round_x_history_size,settings->dim);
             }
 
             temp_idx = 0;
