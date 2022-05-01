@@ -47,6 +47,8 @@ typedef struct {
     double w_min; // min inertia weight value
     double delta; // threshold distance for determining if one point is too close to another point
 
+    double side_len;//side length for box local refinement
+
 } opus_settings_t;
 
 opus_settings_t *opus_settings_new(int dim, double range_lo, double range_hi);
