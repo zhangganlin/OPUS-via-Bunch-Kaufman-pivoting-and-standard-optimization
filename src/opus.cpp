@@ -10,25 +10,34 @@
 #include "surrogate.hpp"
 #include "randomlhs.hpp"
 
+#include <ceres/ceres.h>
+#include <glog/logging.h>
+
+#include<typeinfo>
+
 double** points4opt;
 double* lambda_c4opt; 
 int N4opt;
 int d4opt;
+
 struct CostFunctor {
     template <typename T>
-    bool operator()(const T* const x, T* residual){
+    bool operator()(const T* const x, T* residual)const{
         // total flops: 3Nd + 5N + 2d + 1
-        residual[0] = 0;
-        double phi, error = 0;
-        // flops: 3Nd + 5N
+        residual[0] = T(0);
+                // flops: 3Nd + 5N
+        T phi, error, res0,res1;
         for(int i = 0; i < N4opt; i++){
-            phi = 0;
+            phi = T(0);
             // flops: 3d
             for(int j = 0; j < d4opt; j++){
-                error = x[j] - points4opt[i][j];
-                phi += error * error;
+                error = x[j] - (points4opt[i][j]);
+                // printf("type: %s\n\n",typeid(xj).name());
+                
+                phi += error*error;
+                // printf("phi: %lf\n\n",phi);
             }
-            phi = sqrt(phi);            // flops: 1
+            // phi = sqrt(phi);            // flops: 1
             phi = phi * phi * phi;      // flops: 2
             // optimize: phi = sqrt(phi) * phi;
             residual[0] += phi * lambda_c4opt[i];   // flops: 2
@@ -37,7 +46,7 @@ struct CostFunctor {
         for(int i = 0; i < d4opt; i++){
             residual[0] += x[i] * lambda_c4opt[N4opt + i];
         }
-        // flops: 1
+        // flops: 11.008399, 1.013616
         residual[0] += lambda_c4opt[N4opt + d4opt];
         return true;
     }
@@ -161,7 +170,8 @@ void opus_matrix_free(double **m, int size) {
 //==============================================================
 void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
 	       opus_result_t *solution, opus_settings_t *settings)
-{
+{   
+    google::InitGoogleLogging("opt");
     // Particles
     double **pos_z = opus_matrix_new(settings->k_size, settings->dim);
     double **pos = opus_matrix_new(settings->size, settings->dim); // position matrix
@@ -359,8 +369,39 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
         // -----------------------------------------------------------------------------------
 
         // step 10----------------------------------------------------------------------------
-                
+        points4opt = x_history;
+        lambda_c4opt = lambda_c; 
+        N4opt = valid_x_history_size;
+        d4opt = 2;
+        std::cout << points4opt[0][1]<< std::endl;
+        std::cout << lambda_c4opt[2]<< std::endl;
+        using ceres::AutoDiffCostFunction;
+        using ceres::CostFunction;
+        using ceres::Problem;
+        using ceres::Solve;
+        using ceres::Solver;
 
+        Problem problem;
+        // double * x_star = (double*)malloc(settings->dim*sizeof(double));
+        // memmove( (void *)x_star,(void *)solution->gbest,
+        //                 sizeof(double) * settings->dim);
+        std::vector<double> x_star(2);
+        x_star[0] = solution->gbest[0];
+        x_star[1] = solution->gbest[1];
+        double a=10086;
+        printf("%f, %f\n",x_star[0],x_star[1]);
+        CostFunction* cost_function =
+            new AutoDiffCostFunction<CostFunctor, 1, 2>(new CostFunctor);
+        problem.AddResidualBlock(cost_function, nullptr, &x_star[0]);
+        Solver::Options options;
+        options.minimizer_progress_to_stdout = true;
+        Solver::Summary summary;
+        Solve(options, &problem, &summary);
+
+        x_optimized[0] = x_star[0];
+        x_optimized[1] = x_star[1];
+        std::cout << x_optimized[0]<<", "<<x_optimized[1] << "\n";
+        // std::cout << summary.BriefReport() << "\n";
         // -----------------------------------------------------------------------------------
 
         // step 11----------------------------------------------------------------------------
