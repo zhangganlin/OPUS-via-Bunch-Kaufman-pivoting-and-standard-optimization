@@ -10,6 +10,40 @@
 #include "surrogate.hpp"
 #include "randomlhs.hpp"
 
+double** points4opt;
+double* lambda_c4opt; 
+int N4opt;
+int d4opt;
+struct CostFunctor {
+    template <typename T>
+    bool operator()(const T* const x, T* residual){
+        // total flops: 3Nd + 5N + 2d + 1
+        residual[0] = 0;
+        double phi, error = 0;
+        // flops: 3Nd + 5N
+        for(int i = 0; i < N4opt; i++){
+            phi = 0;
+            // flops: 3d
+            for(int j = 0; j < d4opt; j++){
+                error = x[j] - points4opt[i][j];
+                phi += error * error;
+            }
+            phi = sqrt(phi);            // flops: 1
+            phi = phi * phi * phi;      // flops: 2
+            // optimize: phi = sqrt(phi) * phi;
+            residual[0] += phi * lambda_c4opt[i];   // flops: 2
+        }
+        // flops: 2d
+        for(int i = 0; i < d4opt; i++){
+            residual[0] += x[i] * lambda_c4opt[N4opt + i];
+        }
+        // flops: 1
+        residual[0] += lambda_c4opt[N4opt + d4opt];
+        return true;
+    }
+};
+
+
 // generates a double between (0, 1)
 #define RNG_UNIFORM() (rand()/(double)RAND_MAX)
 
@@ -149,7 +183,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     double* lambda_c = (double*)malloc((x_history_size + settings->dim + 1) * sizeof(double));
     double* f_history = (double*)malloc((x_history_size) * sizeof(double));
     int valid_x_history_size;
-
+    int this_round_x_history_size;
 
     int i, d, step, l, temp_idx, j;
     double u;
@@ -263,7 +297,6 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             //using surrogate model here
             for(l = 0; l < settings->r; l++){
                 temp_result[l] = evaluate_surrogate(temp_pos[l],x_history,lambda_c,valid_x_history_size,settings->dim);
-                printf("surrogate result: %f\n",temp_result[l]);
             }
 
             temp_idx = 0;
@@ -322,87 +355,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
         // -----------------------------------------------------------------------------------
 
         // step 10----------------------------------------------------------------------------
-        //initialize
-        
-        for(i = 0; i < settings->dim; i++){
-            x_star[i] = solution->gbest[i];
-        }
-
-        double norm_diff = 0.;
-        double sum = 0;
-        double lower = 0;
-        double upper = 0;
-
-        double step_size = settings->side_len / 100.;
-        int i, steps = 1000;
-
-        // get_gd(x_star, x_history, lambda_c)
-
-        //GD 
-        for(i = 0; i < steps; i++){
-            //crop
-            for(j = 0; j < settings->dim; j++){
-                if (x_star[j] < settings->range_lo[j]) {
-                    x_star[j] = settings->range_lo[j];
-                } 
-                else if (x_star[j] > settings->range_hi[j]) {
-                    x_star[j] = settings->range_hi[j];
-                } 
-            }
-
-            //gradient based based on history and surrogate
-            //init
-            
-            for(int t = 0; t < settings->dim; t++) {gd[t] = 0; diff[t] = 0;}
-            
-            //gradient
-            for(int k = 0; k < valid_x_history_size; k++){
-                //|x_star - mu|
-                for(j = 0; j < settings->dim; j++){
-                    sum = 0;
-                    diff[j] = x_star[j] - x_history[k][j];
-                    sum += diff[j] * diff[j];
-                }
-                norm_diff = sqrt(sum); 
-
-
-                for(j = 0; j < settings->dim; j++){
-                    gd[j] += lambda_c[k] * norm_diff * diff[j];
-                }
-            }
-
-            for(j = 0; j < settings->dim; j++){
-                gd[j] = gd[j] * 3. + lambda_c[valid_x_history_size + j];
-            }
- 
-            //update
-            //seperate for simplicity   
-            for(j = 0; j < settings->dim; j++){
-                x_star[j] = x_star[j] - step_size * gd[j];
-            } 
-            // printf("step_size: %f\n", step_size);
-            // printf("gd: %f %f\n", gd[0],gd[1]);
-            // printf("x_star: %f %f\n", x_star[0],x_star[1]);
-             
-            //projection
-            for(j = 0; j < settings->dim; j++){
-                lower = solution->gbest[j] - settings->side_len / 2;
-                upper = solution->gbest[j] + settings->side_len / 2;
-                if (x_star[j] < lower) {
-                        x_star[j] = lower;
-                    } 
-                else if (x_star[j] > upper) {
-                        x_star[j] = upper;
-                    } 
-            }
-        }
-        
-        //record
-        for(j = 0; j < settings->dim; j++){   
-            x_optimized[j] = x_star[j];
-        }
-
-
+                
 
         // -----------------------------------------------------------------------------------
 
