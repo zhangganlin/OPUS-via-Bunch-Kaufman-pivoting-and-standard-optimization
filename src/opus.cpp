@@ -103,7 +103,7 @@ double **opus_matrix_new(int size, int dim) {
 
 double *opus_vector_new(int dim){
     double *m = (double *)malloc(dim * sizeof(double));
-    return m
+    return m;
 }
 
 double ** opus_matrix_extend(int old_size, int dim, double** matrix) {
@@ -140,6 +140,9 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     double *fit_b = (double *)malloc(settings->size * sizeof(double));
     double *temp_result = (double *)malloc(settings->r * sizeof(double));
     double *x_optimized = (double *)malloc(settings->dim * sizeof(double));
+    double *gd = opus_vector_new(settings->dim);  
+    double *diff = opus_vector_new(settings->dim); 
+
 
     int x_history_size = settings->size*100;
     double **x_history = opus_matrix_new(x_history_size,settings->dim);
@@ -319,14 +322,18 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
 
         // step 10----------------------------------------------------------------------------
         //initialize
-        x_star =  solution->gbest;
+        double* x_star = (double*)malloc(settings->dim*sizeof(double));
+        for(i = 0; i < settings->dim; i++){
+            x_star[i] = solution->gbest[i];
+        }
+
         double norm_diff = 0.;
         double sum = 0;
         double lower = 0;
         double upper = 0;
 
-        step_size = settings->side_len / 10.;
-        int i, steps = 100;
+        double step_size = settings->side_len / 100.;
+        int i, steps = 1000;
 
         // get_gd(x_star, x_history, lambda_c)
 
@@ -335,29 +342,32 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             //crop
             for(j = 0; j < settings->dim; j++){
                 if (x_star[j] < settings->range_lo[j]) {
-                        x_star[j] = settings->range_lo[j];
-                    } 
+                    x_star[j] = settings->range_lo[j];
+                } 
                 else if (x_star[j] > settings->range_hi[j]) {
-                        x_star[j] = settings->range_hi[j];
-                    } 
+                    x_star[j] = settings->range_hi[j];
+                } 
+            }
 
             //gradient based based on history and surrogate
             //init
-            double *gd = opus_vector_new(settings->dim);  
-            double *diff = opus_vector_new(settings->dim); 
-            for(t = 0; t < settings->dim; i++) {gd[t] = 0; diff[t] = 0;}
-
+            
+            for(int t = 0; t < settings->dim; t++) {gd[t] = 0; diff[t] = 0;}
+            
             //gradient
-            for(k = 0; k < valid_x_history_size; k++){
+            for(int k = 0; k < valid_x_history_size; k++){
                 //|x_star - mu|
                 for(j = 0; j < settings->dim; j++){
                     sum = 0;
-                    diff[j] = x_star[j] - x_history[k * d + j];
+                    diff[j] = x_star[j] - x_history[k][j];
                     sum += diff[j] * diff[j];
                 }
                 norm_diff = sqrt(sum); 
 
-                gd += lambda_c[k] * norm_diff * diff;
+
+                for(j = 0; j < settings->dim; j++){
+                    gd[j] += lambda_c[k] * norm_diff * diff[j];
+                }
             }
 
             for(j = 0; j < settings->dim; j++){
@@ -372,8 +382,8 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
              
             //projection
             for(j = 0; j < settings->dim; j++){
-                lower = solution->gbest[j] - side_len / 2;
-                upper = solution->gbest[j] + side_len / 2;
+                lower = solution->gbest[j] - settings->side_len / 2;
+                upper = solution->gbest[j] + settings->side_len / 2;
                 if (x_star[j] < lower) {
                         x_star[j] = lower;
                     } 
@@ -449,4 +459,6 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     free(x_optimized);
     free(lambda_c);
     free(f_history);
+    free(gd);
+    free(diff);
 }
