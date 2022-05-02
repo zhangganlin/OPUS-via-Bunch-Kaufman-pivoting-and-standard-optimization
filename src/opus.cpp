@@ -52,13 +52,13 @@ double calc_inertia_lin_dec(int step, opus_settings_t *settings) {
 
 //==============================================================
 // create opus settings
-opus_settings_t *opus_settings_new(int dim, double range_lo, double range_hi) {
+opus_settings_t *opus_settings_new() {
     opus_settings_t *settings = (opus_settings_t *)malloc(sizeof(opus_settings_t));
     if (settings == NULL) { return NULL; }
 
     // set some default values
-    settings->dim = dim;
-    settings->goal = 1e-5;
+    settings->dim = OPUS_DIM;
+    settings->goal = OPUS_OPT_GOAL;
 
     // set up the range arrays
     settings->range_lo = (double *)malloc(settings->dim * sizeof(double));
@@ -68,20 +68,21 @@ opus_settings_t *opus_settings_new(int dim, double range_lo, double range_hi) {
     if (settings->range_hi == NULL) { free(settings); free(settings->range_lo); return NULL; }
 
     for (int i=0; i<settings->dim; i++) {
-        settings->range_lo[i] = range_lo;
-        settings->range_hi[i] = range_hi;
+        settings->range_lo[i] = OPUS_RANGE_LO;
+        settings->range_hi[i] = OPUS_RANGE_HI;
     }
 
     settings->size = opus_calc_swarm_size(settings->dim);
-    settings->print_every = 1000;
-    settings->steps = 100000;
+    settings->print_every = OPUS_PRINT_EVERY;
+    settings->steps = OPUS_MAX_NUM_ITER;
     settings->c1 = 1.496;
     settings->c2 = 1.496;
     settings->w_max = OPUS_INERTIA;
     settings->w_min = 0.3;
     settings->k_size = settings->size*2;
-    settings->r = 10;
-    settings->delta = (range_hi-range_lo)/100.0;
+    settings->r = OPUS_NUM_TRIAL;
+    settings->delta = (OPUS_RANGE_HI-OPUS_RANGE_LO)/100.0;
+    settings->side_len = OPUS_SIDE_LEN;
 
     return settings;
 }

@@ -2,6 +2,7 @@
 #ifndef OPUS_H_
 #define OPUS_H_
 
+#include "config.h"
 
 // CONSTANTS
 #define OPUS_MAX_SIZE 100 // max swarm size
@@ -39,7 +40,7 @@ typedef struct {
     int k_size; // number of space-filling design z
     int print_every; // ... N steps (set to 0 for no output)
     int steps; // maximum number of iterations
-    int step; // current PSO step
+    int step; // current OPUS step
     int r; // number of trial positions for each particle
     double c1; // cognitive coefficient
     double c2; // social coefficient
@@ -51,7 +52,7 @@ typedef struct {
 
 } opus_settings_t;
 
-opus_settings_t *opus_settings_new(int dim, double range_lo, double range_hi);
+opus_settings_t *opus_settings_new();
 void opus_settings_free(opus_settings_t *settings);
 
 // return the swarm size based on dimensionality

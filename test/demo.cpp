@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
 
     //test
     obj_fun = opus_rosenbrock;
-    settings = opus_settings_new(2, -2.048, 2.048);
+    settings = opus_settings_new();
     settings->goal = 1e-7;
     settings->size = 30;
     settings->k_size = 35;
