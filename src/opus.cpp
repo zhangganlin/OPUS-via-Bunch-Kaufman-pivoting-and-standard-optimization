@@ -25,28 +25,24 @@ struct CostFunctor {
     bool operator()(const T* const x, T* residual)const{
         // total flops: 3Nd + 5N + 2d + 1
         residual[0] = T(0);
-                // flops: 3Nd + 5N
-        T phi, error, res0,res1;
+        // flops: 3Nd + 5N
+        T phi, error;
         for(int i = 0; i < N4opt; i++){
             phi = T(0);
             // flops: 3d
             for(int j = 0; j < d4opt; j++){
-                error = x[j] - (points4opt[i][j]);
-                // printf("type: %s\n\n",typeid(xj).name());
-                
-                phi += error*error;
-                // printf("phi: %lf\n\n",phi);
+                error = x[j] - points4opt[i][j];
+                phi += error * error;
             }
-            // phi = sqrt(phi);            // flops: 1
-            phi = phi * phi * phi;      // flops: 2
-            // optimize: phi = sqrt(phi) * phi;
+            phi = ceres::sqrt(phi);                 // flops: 1
+            phi = phi * phi * phi;                  // flops: 2
             residual[0] += phi * lambda_c4opt[i];   // flops: 2
         }
         // flops: 2d
         for(int i = 0; i < d4opt; i++){
             residual[0] += x[i] * lambda_c4opt[N4opt + i];
         }
-        // flops: 11.008399, 1.013616
+        // flops: 1
         residual[0] += lambda_c4opt[N4opt + d4opt];
         return true;
     }
@@ -186,7 +182,6 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     double *x_optimized = (double *)malloc(settings->dim * sizeof(double));
     double *gd = opus_vector_new(settings->dim);  
     double *diff = opus_vector_new(settings->dim); 
-    double* x_star = (double*)malloc(settings->dim*sizeof(double));
 
     int x_history_size = settings->size*100;
     double **x_history = opus_matrix_new(x_history_size,settings->dim);
@@ -232,11 +227,8 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             // generate one number within the specified range
             u = settings->range_lo[d] + (settings->range_hi[d] - settings->range_lo[d]) * \
                 RNG_UNIFORM();
-            // initialize position
-            pos[i][d] = pos_z[fit_z[i].index][d];
-            x_history[i][d] = pos_z[fit_z[i].index][d];
-            // best position is the same
-            pos_b[i][d] = pos_z[fit_z[i].index][d];
+            // initialize position, best position is the same
+            pos_b[i][d] = x_history[i][d] = pos[i][d] = pos_z[fit_z[i].index][d];
             // initialize velocity
             vel[i][d] = (u-pos[i][d]) / 2.;
         }
@@ -341,8 +333,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             // step 7-8 ---------------------------------------------------------------------------
             // update particle fitness
             fit[i] = obj_fun(pos[i], settings->dim, obj_fun_params);
-            f_history[valid_x_history_size] = fit[i];
-            valid_x_history_size ++;
+            f_history[valid_x_history_size++] = fit[i];
 
             // update personal best position?
             if (fit[i] < fit_b[i]) {
@@ -373,8 +364,6 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
         lambda_c4opt = lambda_c; 
         N4opt = valid_x_history_size;
         d4opt = 2;
-        std::cout << points4opt[0][1]<< std::endl;
-        std::cout << lambda_c4opt[2]<< std::endl;
         using ceres::AutoDiffCostFunction;
         using ceres::CostFunction;
         using ceres::Problem;
@@ -382,26 +371,26 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
         using ceres::Solver;
 
         Problem problem;
-        // double * x_star = (double*)malloc(settings->dim*sizeof(double));
-        // memmove( (void *)x_star,(void *)solution->gbest,
-        //                 sizeof(double) * settings->dim);
-        std::vector<double> x_star(2);
-        x_star[0] = solution->gbest[0];
-        x_star[1] = solution->gbest[1];
-        double a=10086;
-        printf("%f, %f\n",x_star[0],x_star[1]);
+        memmove( (void *)x_optimized,(void *)solution->gbest,
+                        sizeof(double) * settings->dim);
         CostFunction* cost_function =
             new AutoDiffCostFunction<CostFunctor, 1, 2>(new CostFunctor);
-        problem.AddResidualBlock(cost_function, nullptr, &x_star[0]);
+        problem.AddResidualBlock(cost_function, nullptr, x_optimized);
+        double lower_bound, upper_bound;
+        for(int d = 0; d < settings->dim; d++){
+            lower_bound = solution->gbest[j] - settings->side_len / 2;
+            upper_bound = solution->gbest[j] + settings->side_len / 2;
+            lower_bound = (lower_bound < settings->range_lo[j] ? settings->range_lo[j] : lower_bound);
+            upper_bound = (upper_bound > settings->range_hi[j] ? settings->range_hi[j] : upper_bound);
+            problem.SetParameterLowerBound(x_optimized, d, lower_bound);
+            problem.SetParameterUpperBound(x_optimized, d, upper_bound);
+        }
+
         Solver::Options options;
-        options.minimizer_progress_to_stdout = true;
+        options.minimizer_progress_to_stdout = false;
         Solver::Summary summary;
         Solve(options, &problem, &summary);
-
-        x_optimized[0] = x_star[0];
-        x_optimized[1] = x_star[1];
-        std::cout << x_optimized[0]<<", "<<x_optimized[1] << "\n";
-        // std::cout << summary.BriefReport() << "\n";
+        // std::cout << x_optimized[0]<<", "<<x_optimized[1] << "\n";
         // -----------------------------------------------------------------------------------
 
         // step 11----------------------------------------------------------------------------
@@ -463,5 +452,4 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     free(f_history);
     free(gd);
     free(diff);
-    free(x_star);
 }
