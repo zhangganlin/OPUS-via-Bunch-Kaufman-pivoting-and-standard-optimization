@@ -90,13 +90,13 @@ double calc_inertia_lin_dec(int step, opus_settings_t *settings) {
 
 //==============================================================
 // create opus settings
-opus_settings_t *opus_settings_new(int dim, double range_lo, double range_hi) {
+opus_settings_t *opus_settings_new() {
     opus_settings_t *settings = (opus_settings_t *)malloc(sizeof(opus_settings_t));
     if (settings == NULL) { return NULL; }
 
     // set some default values
-    settings->dim = dim;
-    settings->goal = 1e-5;
+    settings->dim = OPUS_DIM;
+    settings->goal = OPUS_OPT_GOAL;
 
     // set up the range arrays
     settings->range_lo = (double *)malloc(settings->dim * sizeof(double));
@@ -106,23 +106,25 @@ opus_settings_t *opus_settings_new(int dim, double range_lo, double range_hi) {
     if (settings->range_hi == NULL) { free(settings); free(settings->range_lo); return NULL; }
 
     for (int i=0; i<settings->dim; i++) {
-        settings->range_lo[i] = range_lo;
-        settings->range_hi[i] = range_hi;
+        settings->range_lo[i] = OPUS_RANGE_LO;
+        settings->range_hi[i] = OPUS_RANGE_HI;
     }
 
     settings->size = opus_calc_swarm_size(settings->dim);
-    settings->print_every = 1000;
-    settings->steps = 100000;
+    settings->print_every = OPUS_PRINT_EVERY;
+    settings->steps = OPUS_MAX_NUM_ITER;
     settings->c1 = 1.496;
     settings->c2 = 1.496;
     settings->w_max = OPUS_INERTIA;
     settings->w_min = 0.3;
     settings->k_size = settings->size*2;
-    settings->r = 10;
-    settings->delta = (range_hi-range_lo)/100.0;
+    settings->r = OPUS_NUM_TRIAL;
+    settings->delta = (OPUS_RANGE_HI-OPUS_RANGE_LO)/100.0;
+    settings->side_len = OPUS_SIDE_LEN;
 
     return settings;
 }
+
 
 // destroy OPUS settings
 void opus_settings_free(opus_settings_t *settings) {
@@ -180,8 +182,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     double *fit_b = (double *)malloc(settings->size * sizeof(double));
     double *temp_result = (double *)malloc(settings->r * sizeof(double));
     double *x_optimized = (double *)malloc(settings->dim * sizeof(double));
-    double *gd = opus_vector_new(settings->dim);  
-    double *diff = opus_vector_new(settings->dim); 
+
 
     int x_history_size = settings->size*100;
     double **x_history = opus_matrix_new(x_history_size,settings->dim);
@@ -363,7 +364,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
         points4opt = x_history;
         lambda_c4opt = lambda_c; 
         N4opt = valid_x_history_size;
-        d4opt = 2;
+        d4opt = settings->dim;
         using ceres::AutoDiffCostFunction;
         using ceres::CostFunction;
         using ceres::Problem;
@@ -374,10 +375,10 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
         memmove( (void *)x_optimized,(void *)solution->gbest,
                         sizeof(double) * settings->dim);
         CostFunction* cost_function =
-            new AutoDiffCostFunction<CostFunctor, 1, 2>(new CostFunctor);
+            new AutoDiffCostFunction<CostFunctor, 1, OPUS_DIM>(new CostFunctor);
         problem.AddResidualBlock(cost_function, nullptr, x_optimized);
         double lower_bound, upper_bound;
-        for(int d = 0; d < settings->dim; d++){
+        for(d = 0; d < settings->dim; d++){
             lower_bound = solution->gbest[j] - settings->side_len / 2;
             upper_bound = solution->gbest[j] + settings->side_len / 2;
             lower_bound = (lower_bound < settings->range_lo[j] ? settings->range_lo[j] : lower_bound);
@@ -450,6 +451,4 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     free(x_optimized);
     free(lambda_c);
     free(f_history);
-    free(gd);
-    free(diff);
 }

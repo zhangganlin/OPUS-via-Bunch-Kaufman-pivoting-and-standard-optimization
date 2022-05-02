@@ -59,13 +59,9 @@ int main(int argc, char **argv) {
 
     //test
     obj_fun = opus_rosenbrock;
-    settings = opus_settings_new(2, -2.048, 2.048);
-    settings->goal = 1e-7;
+    settings = opus_settings_new();
     settings->size = 30;
     settings->k_size = 35;
-    settings->r = 10;
-    settings->print_every = 1;
-    settings->side_len = 0.005;
     opus_result_t solution;
     solution.gbest = (double *)malloc(settings->dim * sizeof(double));
     opus_solve(obj_fun, NULL, &solution, settings);
