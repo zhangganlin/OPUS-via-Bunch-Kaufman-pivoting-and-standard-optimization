@@ -11,6 +11,45 @@
 #include "randomlhs.hpp"
 #include "tsc_x86.h"
 
+#include <ceres/ceres.h>
+#include <glog/logging.h>
+
+#include<typeinfo>
+
+double** points4opt;
+double* lambda_c4opt; 
+int N4opt;
+int d4opt;
+
+struct CostFunctor {
+    template <typename T>
+    bool operator()(const T* const x, T* residual)const{
+        // total flops: 3Nd + 5N + 2d + 1
+        residual[0] = T(0);
+        // flops: 3Nd + 5N
+        T phi, error;
+        for(int i = 0; i < N4opt; i++){
+            phi = T(0);
+            // flops: 3d
+            for(int j = 0; j < d4opt; j++){
+                error = x[j] - points4opt[i][j];
+                phi += error * error;
+            }
+            phi = ceres::sqrt(phi);                 // flops: 1
+            phi = phi * phi * phi;                  // flops: 2
+            residual[0] += phi * lambda_c4opt[i];   // flops: 2
+        }
+        // flops: 2d
+        for(int i = 0; i < d4opt; i++){
+            residual[0] += x[i] * lambda_c4opt[N4opt + i];
+        }
+        // flops: 1
+        residual[0] += lambda_c4opt[N4opt + d4opt];
+        return true;
+    }
+};
+
+
 // generates a double between (0, 1)
 #define RNG_UNIFORM() (rand()/(double)RAND_MAX)
 
@@ -87,6 +126,7 @@ opus_settings_t *opus_settings_new() {
     return settings;
 }
 
+
 // destroy OPUS settings
 void opus_settings_free(opus_settings_t *settings) {
     free(settings->range_lo);
@@ -129,7 +169,8 @@ void opus_matrix_free(double **m, int size) {
 //==============================================================
 void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
 	       opus_result_t *solution, opus_settings_t *settings)
-{
+{   
+    google::InitGoogleLogging("opt");
     // Particles
     double **pos_z = opus_matrix_new(settings->k_size, settings->dim);
     double **pos = opus_matrix_new(settings->size, settings->dim); // position matrix
@@ -142,9 +183,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     double *fit_b = (double *)malloc(settings->size * sizeof(double));
     double *temp_result = (double *)malloc(settings->r * sizeof(double));
     double *x_optimized = (double *)malloc(settings->dim * sizeof(double));
-    double *gd = opus_vector_new(settings->dim);  
-    double *diff = opus_vector_new(settings->dim); 
-    double* x_star = (double*)malloc(settings->dim*sizeof(double));
+
 
     int x_history_size = settings->size*100;
     double **x_history = opus_matrix_new(x_history_size,settings->dim);
@@ -152,7 +191,6 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     double* f_history = (double*)malloc((x_history_size) * sizeof(double));
     int valid_x_history_size;
     int this_round_x_history_size;
-
 
     int i, d, step, l, temp_idx, j;
     double u;
@@ -191,11 +229,8 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             // generate one number within the specified range
             u = settings->range_lo[d] + (settings->range_hi[d] - settings->range_lo[d]) * \
                 RNG_UNIFORM();
-            // initialize position
-            pos[i][d] = pos_z[fit_z[i].index][d];
-            x_history[i][d] = pos_z[fit_z[i].index][d];
-            // best position is the same
-            pos_b[i][d] = pos_z[fit_z[i].index][d];
+            // initialize position, best position is the same
+            pos_b[i][d] = x_history[i][d] = pos[i][d] = pos_z[fit_z[i].index][d];
             // initialize velocity
             vel[i][d] = (u-pos[i][d]) / 2.;
         }
@@ -315,8 +350,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             // step 7-8 ---------------------------------------------------------------------------
             // update particle fitness
             fit[i] = obj_fun(pos[i], settings->dim, obj_fun_params);
-            f_history[valid_x_history_size] = fit[i];
-            valid_x_history_size ++;
+            f_history[valid_x_history_size++] = fit[i];
 
             // update personal best position?
             if (fit[i] < fit_b[i]) {
@@ -344,88 +378,37 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
         // -----------------------------------------------------------------------------------
 
         // step 10----------------------------------------------------------------------------
-        //initialize
-        
-        for(i = 0; i < settings->dim; i++){
-            x_star[i] = solution->gbest[i];
+        points4opt = x_history;
+        lambda_c4opt = lambda_c; 
+        N4opt = valid_x_history_size;
+        d4opt = settings->dim;
+        using ceres::AutoDiffCostFunction;
+        using ceres::CostFunction;
+        using ceres::Problem;
+        using ceres::Solve;
+        using ceres::Solver;
+
+        Problem problem;
+        memmove( (void *)x_optimized,(void *)solution->gbest,
+                        sizeof(double) * settings->dim);
+        CostFunction* cost_function =
+            new AutoDiffCostFunction<CostFunctor, 1, OPUS_DIM>(new CostFunctor);
+        problem.AddResidualBlock(cost_function, nullptr, x_optimized);
+        double lower_bound, upper_bound;
+        for(d = 0; d < settings->dim; d++){
+            lower_bound = solution->gbest[j] - settings->side_len / 2;
+            upper_bound = solution->gbest[j] + settings->side_len / 2;
+            lower_bound = (lower_bound < settings->range_lo[j] ? settings->range_lo[j] : lower_bound);
+            upper_bound = (upper_bound > settings->range_hi[j] ? settings->range_hi[j] : upper_bound);
+            problem.SetParameterLowerBound(x_optimized, d, lower_bound);
+            problem.SetParameterUpperBound(x_optimized, d, upper_bound);
         }
 
-        double norm_diff = 0.;
-        double sum = 0;
-        double lower = 0;
-        double upper = 0;
-
-        double step_size = settings->side_len / 100.;
-        int i, steps = 1000;
-
-        // get_gd(x_star, x_history, lambda_c)
-
-        //GD 
-        for(i = 0; i < steps; i++){
-            //crop
-            for(j = 0; j < settings->dim; j++){
-                if (x_star[j] < settings->range_lo[j]) {
-                    x_star[j] = settings->range_lo[j];
-                } 
-                else if (x_star[j] > settings->range_hi[j]) {
-                    x_star[j] = settings->range_hi[j];
-                } 
-            }
-
-            //gradient based based on history and surrogate
-            //init
-            
-            for(int t = 0; t < settings->dim; t++) {gd[t] = 0; diff[t] = 0;}
-            
-            //gradient
-            for(int k = 0; k < valid_x_history_size; k++){
-                //|x_star - mu|
-                for(j = 0; j < settings->dim; j++){
-                    sum = 0;
-                    diff[j] = x_star[j] - x_history[k][j];
-                    sum += diff[j] * diff[j];
-                }
-                norm_diff = sqrt(sum); 
-
-
-                for(j = 0; j < settings->dim; j++){
-                    gd[j] += lambda_c[k] * norm_diff * diff[j];
-                }
-            }
-
-            for(j = 0; j < settings->dim; j++){
-                gd[j] = gd[j] * 3. + lambda_c[valid_x_history_size + j];
-            }
- 
-            //update
-            //seperate for simplicity   
-            for(j = 0; j < settings->dim; j++){
-                x_star[j] = x_star[j] - step_size * gd[j];
-            } 
-            // printf("step_size: %f\n", step_size);
-            // printf("gd: %f %f\n", gd[0],gd[1]);
-            // printf("x_star: %f %f\n", x_star[0],x_star[1]);
-             
-            //projection
-            for(j = 0; j < settings->dim; j++){
-                lower = solution->gbest[j] - settings->side_len / 2;
-                upper = solution->gbest[j] + settings->side_len / 2;
-                if (x_star[j] < lower) {
-                        x_star[j] = lower;
-                    } 
-                else if (x_star[j] > upper) {
-                        x_star[j] = upper;
-                    } 
-            }
-        }
-        
-        //record
-        for(j = 0; j < settings->dim; j++){   
-            x_optimized[j] = x_star[j];
-        }
-
-
-
+        Solver::Options options;
+        options.minimizer_progress_to_stdout = false;
+        Solver::Summary summary;
+        // Solve(options, &problem, &summary);
+        // std::cout << x_optimized[0]<<", "<<x_optimized[1] << "\n";
         // -----------------------------------------------------------------------------------
 
         // step 11----------------------------------------------------------------------------
@@ -485,7 +468,4 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     free(x_optimized);
     free(lambda_c);
     free(f_history);
-    free(gd);
-    free(diff);
-    free(x_star);
 }

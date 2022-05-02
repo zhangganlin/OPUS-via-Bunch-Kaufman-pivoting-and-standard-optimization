@@ -1,7 +1,7 @@
 #ifndef OPUS_CONFIG_H_
 #define OPUS_CONFIG_H_
 
-#define OPUS_DIM (4)
+#define OPUS_DIM 2
 #define OPUS_RANGE_LO (-2.048)
 #define OPUS_RANGE_HI (2.048)
 #define OPUS_OPT_GOAL (1e-7)
