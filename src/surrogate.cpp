@@ -1,4 +1,5 @@
 #include "surrogate.hpp"
+
 using namespace std;
 
 void get_eigen_matrix( double* mat_d, Eigen::MatrixXd& mat_e, int m, int n){
@@ -146,6 +147,7 @@ void build_surrogate(double** points, double* f, int N, int d, double* lambda_c)
 double evaluate_surrogate( double* x, double* points,  double* lambda_c, int N, int d){
     // total flops: 3Nd + 5N + 2d + 1
     double phi, error, res = 0;
+    
     // flops: 3Nd + 5N
     for(int i = 0; i < N; i++){
         phi = 0;

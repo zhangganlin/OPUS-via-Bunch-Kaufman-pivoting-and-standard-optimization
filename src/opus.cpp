@@ -9,6 +9,7 @@
 #include "opus.h"
 #include "surrogate.hpp"
 #include "randomlhs.hpp"
+#include "tsc_x86.h"
 
 // generates a double between (0, 1)
 #define RNG_UNIFORM() (rand()/(double)RAND_MAX)
@@ -232,8 +233,16 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
         }
 
         // step 5: fit surrogate--------------------------------------------------------------
-        build_surrogate_eigen(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
+        // build_surrogate_eigen(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
         // build_surrogate(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
+        int num_runs = (1 << 10);
+        myInt64 start, cycles;
+        start = start_tsc();
+        for(int i = 0; i < num_runs; i++){
+            build_surrogate(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
+        }
+        cycles = stop_tsc(start) / num_runs;
+        std::cout << "Cycles for build surrogate: " << cycles << "(size: "<<  valid_x_history_size << " " << settings->dim<<")"<< std::endl;
 
         this_round_x_history_size = valid_x_history_size;
         // -----------------------------------------------------------------------------------
@@ -266,9 +275,16 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             }
             //6b
             //using surrogate model here
-            for(l = 0; l < settings->r; l++){
-                temp_result[l] = evaluate_surrogate(temp_pos[l],x_history,lambda_c,this_round_x_history_size,settings->dim);
+            int num_runs = (1 << 10);
+            myInt64 start, cycles;
+            start = start_tsc();
+            for(int t = 0; t < num_runs; t++){
+                for(l = 0; l < settings->r; l++){
+                    temp_result[l] = evaluate_surrogate(temp_pos[l],x_history,lambda_c,this_round_x_history_size,settings->dim);
+                }
             }
+            cycles = stop_tsc(start) / num_runs;
+            std::cout << "Cycles for evaluate surrogate: " << cycles << "(size: "<<  this_round_x_history_size << " " << settings->dim<<" " << settings->r<< ")"<< std::endl;
 
             temp_idx = 0;
             temp_res_min = temp_result[temp_idx];
@@ -321,8 +337,9 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
         }
 
         // step 9 Refit surrogate-------------------------------------------------------------
-        build_surrogate_eigen(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
-        // build_surrogate(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
+        // build_surrogate_eigen(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
+
+        build_surrogate(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
         // -----------------------------------------------------------------------------------
 
         // step 10----------------------------------------------------------------------------
