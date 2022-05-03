@@ -3,3 +3,4 @@ demo
 .vscode/*
 build/*
 .DS_Store
+.ipynb_checkpoints

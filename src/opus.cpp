@@ -49,6 +49,111 @@ struct CostFunctor {
     }
 };
 
+typedef struct{
+    // for cycle testing result storage
+    myInt64 step1to4;
+    std::vector<myInt64> step5_time;
+    std::vector<int> step5_x_history_size;
+    std::vector<myInt64> step6a;
+    std::vector<myInt64> step6b;
+    std::vector<myInt64> step7;
+    std::vector<myInt64> step8;
+    std::vector<myInt64> step9_time;
+    std::vector<int> step9_x_history_size;
+    std::vector<myInt64> step10;
+    std::vector<myInt64> step11;
+}cycle_stastic_t;
+
+void cycle_stastic_init(cycle_stastic_t& obj){
+    obj.step1to4 = 0;
+    obj.step5_time.clear();
+    obj.step5_x_history_size.clear();
+    obj.step6a.clear();
+    obj.step6b.clear();
+    obj.step7.clear();
+    obj.step8.clear();
+    obj.step9_time.clear();
+    obj.step9_x_history_size.clear();
+    obj.step10.clear();
+    obj.step11.clear();
+}
+
+void print_cycle_stastic(cycle_stastic_t& obj, opus_settings_t *settings){
+    std::cout << "parameters:" << std::endl;
+    std::cout << "  dim: " << settings->dim << std::endl;
+    std::cout << "  range_lo: " << settings->range_lo[0] << std::endl;
+    std::cout << "  range_hi: " << settings->range_hi[0] << std::endl;
+    std::cout << "  swarm_size: " << settings->size << std::endl;
+    std::cout << "  k_size: " << settings->k_size << std::endl;
+    std::cout << "  opt_goal: " << settings->goal << std::endl;
+    std::cout << "  num_trial: " << settings->r << std::endl;
+    std::cout << "  side_len: " << settings->side_len << std::endl;
+
+    std::cout << "step1to4: " << obj.step1to4 << std::endl;
+    
+    std::cout << "step5_time: [";
+    for(int i =0; i < obj.step5_time.size()-1; i++){
+        std::cout << obj.step5_time[i] << ",";
+    }
+    std::cout << obj.step5_time[obj.step5_time.size()-1] << "]" << std::endl;
+
+    std::cout << "step5_x_history_size: [";
+    for(int i =0; i < obj.step5_x_history_size.size()-1; i++){
+        std::cout << obj.step5_x_history_size[i] << ",";
+    }
+    std::cout << obj.step5_x_history_size[obj.step5_x_history_size.size()-1] << "]" << std::endl;
+
+    std::cout << "step6a: [";
+    for(int i =0; i < obj.step6a.size()-1; i++){
+        std::cout << obj.step6a[i] << ",";
+    }
+    std::cout << obj.step6a[obj.step6a.size()-1] << "]" << std::endl;
+
+    std::cout << "step6b: [";
+    for(int i =0; i < obj.step6b.size()-1; i++){
+        std::cout << obj.step6b[i] << ",";
+    }
+    std::cout << obj.step6b[obj.step6b.size()-1] << "]" << std::endl;
+
+
+    std::cout << "step7: [";
+    for(int i =0; i < obj.step7.size()-1; i++){
+        std::cout << obj.step7[i] << ",";
+    }
+    std::cout << obj.step7[obj.step7.size()-1] << "]" << std::endl;
+
+    std::cout << "step8: [";
+    for(int i =0; i < obj.step8.size()-1; i++){
+        std::cout << obj.step8[i] << ",";
+    }
+    std::cout << obj.step8[obj.step8.size()-1] << "]" << std::endl;
+
+
+    std::cout << "step9_time: [";
+    for(int i =0; i < obj.step9_time.size()-1; i++){
+        std::cout << obj.step9_time[i] << ",";
+    }
+    std::cout << obj.step9_time[obj.step9_time.size()-1] << "]" << std::endl;
+
+    std::cout << "step9_x_history_size: [";
+    for(int i =0; i < obj.step9_x_history_size.size()-1; i++){
+        std::cout << obj.step9_x_history_size[i] << ",";
+    }
+    std::cout << obj.step9_x_history_size[obj.step9_x_history_size.size()-1] << "]" << std::endl;
+
+
+    std::cout << "step10: [";
+    for(int i =0; i < obj.step10.size()-1; i++){
+        std::cout << obj.step10[i] << ",";
+    }
+    std::cout << obj.step10[obj.step10.size()-1] << "]" << std::endl;
+
+    std::cout << "step11: [";
+    for(int i =0; i < obj.step11.size()-1; i++){
+        std::cout << obj.step11[i] << ",";
+    }
+    std::cout << obj.step11[obj.step11.size()-1] << "]" << std::endl;
+}
 
 // generates a double between (0, 1)
 #define RNG_UNIFORM() (rand()/(double)RAND_MAX)
@@ -170,6 +275,10 @@ void opus_matrix_free(double **m, int size) {
 void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
 	       opus_result_t *solution, opus_settings_t *settings)
 {   
+    myInt64 start;
+    cycle_stastic_t cycle_stastic;
+    cycle_stastic_init(cycle_stastic);
+
     google::InitGoogleLogging("opt");
     // Particles
     double **pos_z = opus_matrix_new(settings->k_size, settings->dim);
@@ -215,6 +324,10 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     // SWARM INITIALIZATION
     // for each particle
     randomLHS(settings->k_size,settings->dim,pos_z,*settings->range_lo,*settings->range_hi);
+
+    start = start_tsc();
+
+
     for(i=0; i<settings->k_size;i++){
         fit_z[i] = (fz_t){obj_fun(pos_z[i], settings->dim, obj_fun_params),i};
     }
@@ -246,6 +359,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
                     sizeof(double) * settings->dim);
         }
     }
+    cycle_stastic.step1to4 = stop_tsc(start);
     valid_x_history_size = settings->size;
     this_round_x_history_size = valid_x_history_size;
     //------------------------------------------------------------------------------------------------
@@ -271,22 +385,22 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
         // step 5: fit surrogate--------------------------------------------------------------
         // build_surrogate_eigen(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
         // build_surrogate(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
-        int num_runs = (1 << 10);
-        myInt64 start, cycles;
         start = start_tsc();
-        for(int i = 0; i < num_runs; i++){
             build_surrogate(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
-        }
-        cycles = stop_tsc(start) / num_runs;
-        std::cout << "Cycles for build surrogate: " << cycles << "(size: "<<  valid_x_history_size << " " << settings->dim<<")"<< std::endl;
+        cycle_stastic.step5_time.push_back(stop_tsc(start));
+        cycle_stastic.step5_x_history_size.push_back(valid_x_history_size);
 
         this_round_x_history_size = valid_x_history_size;
         // -----------------------------------------------------------------------------------
 
-
+        cycle_stastic.step6a.push_back(0);
+        cycle_stastic.step6b.push_back(0);
+        cycle_stastic.step7.push_back(0);
+        cycle_stastic.step8.push_back(0);
         // update all particles
         for (i=0; i<settings->size; i++) {       
             // step 6-----------------------------------------------------------------------------
+            start = start_tsc();
             // 6a
             for(l=0; l<settings->r; l++){
                 for (d=0; d<settings->dim; d++) {
@@ -309,6 +423,9 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
                     }
                 }
             }
+            cycle_stastic.step6a[step] += stop_tsc(start);
+
+            start = start_tsc();
             //6b
             //using surrogate model here
             int num_runs = (1 << 10);
@@ -320,7 +437,6 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
                 }
             }
             cycles = stop_tsc(start) / num_runs;
-            std::cout << "Cycles for evaluate surrogate: " << cycles << "(size: "<<  this_round_x_history_size << " " << settings->dim<<" " << settings->r<< ")"<< std::endl;
 
             temp_idx = 0;
             temp_res_min = temp_result[temp_idx];
@@ -343,13 +459,17 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             }
             memmove((void *)x_history[valid_x_history_size], (void *)temp_pos[temp_idx],
                         sizeof(double) * settings->dim);
-
+            cycle_stastic.step6b[step] += stop_tsc(start);
             // -----------------------------------------------------------------------------------
 
 
             // step 7-8 ---------------------------------------------------------------------------
             // update particle fitness
+            start = start_tsc();
             fit[i] = obj_fun(pos[i], settings->dim, obj_fun_params);
+            cycle_stastic.step7[step] += stop_tsc(start);
+            
+            start = start_tsc();
             f_history[valid_x_history_size++] = fit[i];
 
             // update personal best position?
@@ -368,16 +488,20 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
                         sizeof(double) * settings->dim);
             }
             // -----------------------------------------------------------------------------------
-
+            cycle_stastic.step8[step] += stop_tsc(start);
         }
 
         // step 9 Refit surrogate-------------------------------------------------------------
         // build_surrogate_eigen(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
-
+        start = start_tsc();
         build_surrogate(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
+        cycle_stastic.step9_time.push_back(stop_tsc(start));
+        cycle_stastic.step9_x_history_size.push_back(valid_x_history_size);
         // -----------------------------------------------------------------------------------
 
         // step 10----------------------------------------------------------------------------
+        start = start_tsc();
+
         points4opt = x_history;
         lambda_c4opt = lambda_c; 
         N4opt = valid_x_history_size;
@@ -407,11 +531,14 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
         Solver::Options options;
         options.minimizer_progress_to_stdout = false;
         Solver::Summary summary;
-        // Solve(options, &problem, &summary);
-        // std::cout << x_optimized[0]<<", "<<x_optimized[1] << "\n";
+        Solve(options, &problem, &summary);
+
+        cycle_stastic.step10.push_back(stop_tsc(start));
         // -----------------------------------------------------------------------------------
 
         // step 11----------------------------------------------------------------------------
+        start = start_tsc();
+
         min_dist = 0;
         for(j = 0; j < valid_x_history_size; j++){
             temp_dist = 0;
@@ -442,10 +569,10 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             valid_x_history_size ++;
         }
         
+        cycle_stastic.step11.push_back(stop_tsc(start));
         // -----------------------------------------------------------------------------------
 
 
-        
 
         if (settings->print_every && (step % settings->print_every == 0))
             printf("Step %d (w=%.2f) :: min err=%.5e\n", step, w, solution->error);
@@ -468,4 +595,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     free(x_optimized);
     free(lambda_c);
     free(f_history);
+
+    print_cycle_stastic(cycle_stastic,settings);
+
 }
