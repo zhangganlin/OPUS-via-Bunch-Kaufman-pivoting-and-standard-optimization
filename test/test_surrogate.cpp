@@ -20,6 +20,12 @@ int main(){
     for(int i = 0; i < num_runs; i++){
         build_surrogate(points, f, 3, 2, lambda_c);
     }
+
+    for(int i = 0; i < d+N+1; i++){
+        cout << lambda_c[i] << " ";
+    }
+    cout << endl;
+
     cycles = stop_tsc(start) / num_runs;
     cout << "Cycles for build surrogate: " << cycles << endl;
     
