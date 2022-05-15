@@ -19,6 +19,7 @@ set(SOURCES
     src/opus.cpp
     src/randomlhs.cpp
     src/surrogate.cpp
+    src/LinearSolver.cpp
 )
 
 set(TEST_SURROGATE_SOURCES
