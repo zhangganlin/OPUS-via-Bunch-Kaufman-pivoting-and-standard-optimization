@@ -1,0 +1,1 @@
+/Library/Developer/CommandLineTools/usr/bin/c++ -g -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/demo.dir/test/demo.cpp.o CMakeFiles/demo.dir/src/opus.cpp.o CMakeFiles/demo.dir/src/randomlhs.cpp.o CMakeFiles/demo.dir/src/surrogate.cpp.o -o demo 

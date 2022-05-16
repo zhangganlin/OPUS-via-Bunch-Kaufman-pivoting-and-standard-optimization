@@ -4,11 +4,11 @@
 
 //#include "LinearSolver.hpp"
 // #include <stdlib.h> // for rand() stuff
-#include "LinearSolver.h"
+//#include "LinearSolver.h"
 #include <stdio.h>
 
 // #include <time.h> // for time()
-// #include <math.h> // for cos(), pow(), sqrt() etc.
+ #include <math.h> // for cos(), pow(), sqrt() etc.
 // #include <float.h> // for DBL_MAX
 // #include <string.h> // for mem*
 
@@ -208,8 +208,8 @@ void BunchKaufman(double* A, double* L, int* P, int* pivot, int M){
                 k = k + 1;
                 //printf("qqqqqqqqq");
             } else if (abs(A[r * M + r]) >= alpha * wr){
-                printf("r = %d\n", r);
-                printf("k = %d\n", k);
+                // printf("r = %d\n", r);
+                // printf("k = %d\n", k);
                 tmp_i = P[k];
                 P[k] = P[r];
                 P[r] = tmp_i;
@@ -312,7 +312,7 @@ void BunchKaufman(double* A, double* L, int* P, int* pivot, int M){
                 }
 
                 for (j = k+2; j < M; j++){
-                    for(i = k+2; i < M ; i++){
+                    for(i = j; i < M ; i++){
                         A[i * M + j] -= L[i * M + k] * A[j * M + k] + L[i * M + k+1] * A[j * M + k+1];
                     }
                 }
@@ -326,8 +326,9 @@ void BunchKaufman(double* A, double* L, int* P, int* pivot, int M){
                  }
                 pivot[k] = 2;
                 k = k + 2;
-                printf("\n k = %d \n", k);
-                
+                for (i = 0; i < M; i++){
+                    A[i*M + i+1] = A[(i+1)*M +i];
+                }
             }
         }
     }
@@ -343,15 +344,17 @@ void testBunchKaufman1(){
     int* P = (int*)malloc(M * sizeof(int));
     int* pivot = (int*)malloc(M * sizeof(int));
 
-    A[0] = 36;
-    A[1] = 35;
-    A[2] = 45;
-    A[3] = 18;
-    A[4] = 10;
-    A[5] = 24;
-    A[6] = 7;
-    A[7] = 23;
-    A[8] = 42;
+    A[0] = 35;
+    A[1] = 45;
+    A[2] = 18;
+    A[3] = 45;
+    A[4] = 24;
+    A[5] = 7;
+    A[6] = 18;
+    A[7] = 7;
+    A[8] = 0.0;
+
+
 
     BunchKaufman(A, L, P, pivot, M);
     for(int i = 0; i < M; i++) {
@@ -405,7 +408,7 @@ void testBunchKaufman2(){
     A[15] = 569;
     A[16] = 81;
     A[17] = 608;
-    A[18] = 4429;
+    A[18] = 0;
     A[19] = 1902;
     A[20] = 569;
     A[21] = 81;  
@@ -504,11 +507,11 @@ void testBunchKaufman3(){
     printf("\n--------test1--------\n");
 
 }
-// int main(){
-//     testBunchKaufman1();
-//     //testBunchKaufman3();
-//     //testBunchKaufman2();
-// }
+int main(){
+    //testBunchKaufman1();
+    //testBunchKaufman3();
+    testBunchKaufman2();
+}
 
 
 // int main(){
