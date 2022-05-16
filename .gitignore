@@ -1,6 +1,8 @@
 *.o
 demo
-.vscode/*
+.vscode
+.idea
+cmake-build-debug
 build/*
 .DS_Store
 .ipynb_checkpoints

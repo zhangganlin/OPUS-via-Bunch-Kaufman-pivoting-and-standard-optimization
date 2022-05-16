@@ -23,6 +23,7 @@ void test_solve_diag(){
     double* D = (double*)malloc(25 * sizeof(double));
     double* b = (double*)malloc(5 * sizeof(double));
     double* x = (double*)malloc(5 * sizeof(double));
+    int* pivot = (int*)malloc(5*sizeof(int));
     for(int i = 0; i < 25; i++){
         D[i] = 0;        
     }
@@ -33,9 +34,10 @@ void test_solve_diag(){
     for(int i = 3; i < 8; i++){
         b[i-3] = i;
     }
-    solve_diag(D, x, b, n);
-    cout << "x should be: ";
-    cout << "[1.0000    2.2000   -1.6000    1.2000    1.1667].T\n";
+    pivot[0] = 1;pivot[1] = 2;pivot[2] = 0;pivot[3] = 1;pivot[4] = 1;
+    solve_diag(D,pivot, x, b, n);
+    cout << "x should be:\n";
+    cout << "1 2.2 -1.6 1.2 1.16667\n";
     cout << "solved x:\n";
     for(int i = 0; i < n; i++){
         cout << x[i] << " ";
@@ -44,6 +46,7 @@ void test_solve_diag(){
     free(D);
     free(b);
     free(x);
+    free(pivot);
 }   
 
 void test_solve_lower(){
@@ -73,8 +76,8 @@ void test_solve_lower(){
         b[i] = i+3;
     }
     solve_lower(D,x,b,n);
-    cout << "x should be: ";
-    cout << "[1.0000, -0.7500, -0.7500, 1.6500, 0.0526].T\n";
+    cout << "x should be:\n";
+    cout << "1.0000, -0.7500, -0.7500, 1.6500, 0.0526\n";
     cout << "solved x:\n";
     for(int i = 0; i < n; i++){
         cout << x[i] << " ";
@@ -112,8 +115,8 @@ void test_solve_upper(){
         b[i] = i+3;
     }
     solve_upper(D,x,b,n);
-    cout << "x should be: ";
-    cout << "[3.7833, 1.1500, -3.4000, 0.8316, 0.3684].T\n";
+    cout << "x should be:\n";
+    cout << "3.7833, 1.1500, -3.4000, 0.8316, 0.3684\n";
     cout << "solved x:\n";
     for(int i = 0; i < n; i++){
         cout << x[i] << " ";
@@ -154,6 +157,7 @@ void test_solve_BunchKaufman(){
     */
 
     int* P = (int*)malloc(5*sizeof(int));
+    int* pivot = (int*)malloc(5*sizeof(int));
     double* L = (double*)malloc(25 * sizeof(double));
     double* b = (double*)malloc(5 * sizeof(double));
     double* x = (double*)malloc(5 * sizeof(double));
@@ -172,7 +176,8 @@ void test_solve_BunchKaufman(){
     }
     D[5*2 + 1] = D[5*1 + 2] = 9;
 
-    P[0] = 1; P[1]=0; P[2]=2; P[3]=4; P[4] = 3;
+    P[0] = 2; P[1]=1; P[2]=3; P[3]=5; P[4] = 4;
+    pivot[0] = 1;pivot[1] = 2;pivot[2] = 0;pivot[3] = 1;pivot[4] = 1;
 
     int n = 5;
     double* Pb = (double*)malloc(n*sizeof(double));
@@ -180,16 +185,16 @@ void test_solve_BunchKaufman(){
     double* LTPx = (double*)malloc(n*sizeof(double));
     double* Px = (double*)malloc(n*sizeof(double));
     for(int i = 0; i < n; i++){
-        Pb[i] = b[P[i]];
+        Pb[i] = b[P[i]-1];
     }
 
     solve_lower(L,DLTPx,Pb,n);
-    solve_diag(D,LTPx,DLTPx,n); //Assume D is saved in A
+    solve_diag(D,pivot,LTPx,DLTPx,n); //Assume D is saved in A
     solve_upper(L,Px,LTPx,n);
     for(int i = 0; i < n; i++){
-        x[P[i]] = Px[i];
+        x[P[i]-1] = Px[i];
     }
-
+    cout << "x should be:\n0.433896 1.06931 -0.830719 -0.000395726 0.0942846\n";
     cout << "solved x:\n";
     for(int i = 0; i < n; i++){
         cout << x[i] << " ";
@@ -202,6 +207,7 @@ void test_solve_BunchKaufman(){
     free(L);
     free(x);
     free(b);
+    free(pivot);
     free(Pb);free(DLTPx);free(Px);free(LTPx);
     
 }
@@ -242,10 +248,212 @@ void test_LU_solver(){
 }
 
 
+void testBunchKaufman1(){
+    const int M = 3;
+    double* A = (double*)malloc((M * M) * sizeof(double));
+    double* L = (double*)malloc((M * M) * sizeof(double));
+    int* P = (int*)malloc(M * sizeof(int));
+    int* pivot = (int*)malloc(M * sizeof(int));
+
+    A[0] = 27;    A[1] = 98;    A[2] = 49;
+    A[3] = 98;    A[4] = 83;    A[5] = 54;
+    A[6] = 49;    A[7] = 54;    A[8] = 37;
+
+    BunchKaufman(A, L, P, pivot, M);
+    printf("L \n");
+    for(int i = 0; i < M; i++) {
+        for(int j = 0; j < M; j++) {
+            printf("%f ", L[i * M + j]);
+        }
+        printf("\n");
+    } 
+    printf("D \n");
+    for(int i = 0; i < M; i++) {
+        for(int j = 0; j < M; j++) {
+            printf("%f ", A[i * M + j]);
+        }
+        printf("\n");
+    }
+    printf("P \n");
+    for(int j = 0; j < M; j++) {
+        printf("%d ", P[j]);
+    }
+    printf("\npiviot\n");
+    for(int j = 0; j < M; j++) {
+        printf("%d ", pivot[j]);
+    }
+    printf("\n");
+
+    free(A);
+    free(L);
+    free(P);
+    free(pivot);
+}
+void testBunchKaufman2(){
+    const int M = 5;
+    double* A = (double*)malloc((M * M) * sizeof(double));
+    double* L = (double*)malloc((M * M) * sizeof(double));
+    int* P = (int*)malloc(M * sizeof(int));
+    int* pivot = (int*)malloc(M * sizeof(int));
+    A[0]  = 211; A[1]  = 63; A[2]  = 252; A[3]  =  569; A[4]  =  569;
+    A[5]  =  63; A[6]  = 27; A[7]  =  72; A[8]  =   81; A[9]  =   81;
+    A[10] = 252; A[11] = 72; A[12] = 287; A[13] =  608; A[14] =  608;
+    A[15] = 569; A[16] = 81; A[17] = 608; A[18] = 4429; A[19] = 1902;
+    A[20] = 569; A[21] = 81; A[22] = 608; A[23] = 1902; A[24] = 1902;
+    BunchKaufman(A, L, P, pivot, M);
+    printf("L \n");
+    for(int i = 0; i < M; i++) {
+        for(int j = 0; j < M; j++) {
+            printf("%f ", L[i * M + j]);
+        }
+        printf("\n");
+    } 
+    printf("D \n");
+    for(int i = 0; i < M; i++) {
+        for(int j = 0; j < M; j++) {
+            printf("%f ", A[i * M + j]);
+        }
+        printf("\n");
+    }
+    printf("P \n");
+    for(int j = 0; j < M; j++) {
+        printf("%d ", P[j]);
+    }
+    printf("\npiviot\n");
+    for(int j = 0; j < M; j++) {
+        printf("%d ", pivot[j]);
+    }
+    printf("\n");
+    free(A);
+    free(L);
+    free(P);
+    free(pivot);
+}
+
+void testBunchKaufman3(){
+    int N = 2;
+    int func_dim = 1;
+    int d = 1;
+    const int M = N + d + 1;
+    double* A = (double*)malloc((M * M) * sizeof(double));
+    double* L = (double*)malloc((M * M) * sizeof(double));
+    int* P = (int*)malloc(M * sizeof(int));
+    int* pivot = (int*)malloc(M * sizeof(int));
+    int i, j;
+    A[0]  =  6;  A[1]  =  12;  A[2]  =   3;  A[3]  = -6;
+    A[4]  = 12;  A[5]  =  -8;  A[6]  = -13;  A[7]  =  4;
+    A[8]  =  3;  A[9]  = -13;  A[10] =  -7;  A[11] =  1;
+    A[12] = -6;  A[13] =   4;  A[14] =   1;  A[15] =  6;
+    BunchKaufman(A, L, P, pivot, M);
+    printf("L \n");
+    for(int i = 0; i < M; i++) {
+        for(int j = 0; j < M; j++) {
+            printf("%f ", L[i * M + j]);
+        }
+        printf("\n");
+    } 
+    printf("D \n");
+    for(int i = 0; i < M; i++) {
+        for(int j = 0; j < M; j++) {
+            printf("%f ", A[i * M + j]);
+        }
+        printf("\n");
+    }
+    printf("P \n");
+    for(int j = 0; j < M; j++) {
+        printf("%d ", P[j]);
+    }
+    printf("\npiviot\n");
+    for(int j = 0; j < M; j++) {
+        printf("%d ", pivot[j]);
+    }
+    printf("\n");
+
+    free(A);
+    free(L);
+    free(P);
+    free(pivot);
+}
+
+void testBunchKaufman4(){
+    const int M = 5;
+    double* A = (double*)malloc((M * M) * sizeof(double));
+    double* L = (double*)malloc((M * M) * sizeof(double));
+    int* P = (int*)malloc(M * sizeof(int));
+    int* pivot = (int*)malloc(M * sizeof(int));
+    A[0]  = 211; A[1]  = 63; A[2]  = 252; A[3]  =  569; A[4]  =  569;
+    A[5]  =  63; A[6]  = 27; A[7]  =   0; A[8]  =   81; A[9]  =   81;
+    A[10] = 252; A[11] =  0; A[12] = 287; A[13] =  608; A[14] =  608;
+    A[15] = 569; A[16] = 81; A[17] = 608; A[18] =    0; A[19] = 1902;
+    A[20] = 569; A[21] = 81; A[22] = 608; A[23] = 1902; A[24] = 1902;
+    BunchKaufman(A, L, P, pivot, M);
+    printf("L \n");
+    for(int i = 0; i < M; i++) {
+        for(int j = 0; j < M; j++) {
+            printf("%f ", L[i * M + j]);
+        }
+        printf("\n");
+    } 
+    printf("D \n");
+    for(int i = 0; i < M; i++) {
+        for(int j = 0; j < M; j++) {
+            printf("%f ", A[i * M + j]);
+        }
+        printf("\n");
+    }
+    printf("P \n");
+    for(int j = 0; j < M; j++) {
+        printf("%d ", P[j]);
+    }
+    printf("\npiviot\n");
+    for(int j = 0; j < M; j++) {
+        printf("%d ", pivot[j]);
+    }
+    printf("\n");
+    free(A);
+    free(L);
+    free(P);
+    free(pivot);
+}
+
+void test_BunchKaufmanAndSolver(){
+    const int M = 5;
+    double* A = (double*)malloc((M * M) * sizeof(double));
+    double* x = (double*)malloc(M * sizeof(double));
+    double* b = (double*)malloc(M * sizeof(double));
+
+    A[0]  = 211; A[1]  = 63; A[2]  = 252; A[3]  =  569; A[4]  =  569;
+    A[5]  =  63; A[6]  = 27; A[7]  =   0; A[8]  =   81; A[9]  =   81;
+    A[10] = 252; A[11] =  0; A[12] = 287; A[13] =  608; A[14] =  608;
+    A[15] = 569; A[16] = 81; A[17] = 608; A[18] =    0; A[19] = 1902;
+    A[20] = 569; A[21] = 81; A[22] = 608; A[23] = 1902; A[24] = 1902;
+    for(int i = 0; i < 5; i++){
+        b[i] = i+3;
+    }
+
+    solve_BunchKaufman(A,x,b,5);
+    cout << "x should be:\n0.0778 -0.0039 -0.0301 0.0005 -0.0103\n";
+    cout << "solved x:\n";
+    for(int i = 0; i < 5; i++){
+        cout << x[i] << " ";
+    }
+    cout << endl;
+
+    free(A);
+    free(x);
+    free(b);
+}
+
+
 int main(){
-    // test_solve_diag();
-    // test_solve_lower();
-    // test_solve_upper();
-    // test_solve_BunchKaufman();
-    test_LU_solver();
+    test_solve_diag();
+    test_solve_lower();
+    test_solve_upper();
+    test_solve_BunchKaufman();
+    // test_LU_solver();
+    // testBunchKaufman1();
+    // testBunchKaufman2();
+    // testBunchKaufman3();
+    // testBunchKaufman4();
+    test_BunchKaufmanAndSolver();
 }
