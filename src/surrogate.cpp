@@ -131,10 +131,12 @@ void build_surrogate(double* points, double* f, int N, int d, double* lambda_c){
     Eigen::VectorXd b_e, lambda_c_e;
     get_eigen_matrix(A, A_e, N + d + 1, N + d + 1);
     get_eigen_vector(b, b_e, N + d + 1);
-    free(A);
-    free(b);
     lambda_c_e = A_e.colPivHouseholderQr().solve(b_e);
     get_double_vector(lambda_c, lambda_c_e, N + d + 1);
+
+    // LUdecomp(A,b,lambda_c,N,d);
+    free(A);
+    free(b);
 }
 
 void build_surrogate(double** points, double* f, int N, int d, double* lambda_c){

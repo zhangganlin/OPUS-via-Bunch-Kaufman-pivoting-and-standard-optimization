@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <Eigen/Dense>
+#include "LinearSolver.h"
 
 void get_eigen_matrix( double* mat_d, Eigen::MatrixXd& mat_e, int m, int n);
 

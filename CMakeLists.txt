@@ -19,6 +19,7 @@ set(SOURCES
     src/opus.cpp
     src/randomlhs.cpp
     src/surrogate.cpp
+    src/LinearSolver.cpp
 )
 
 set(TEST_SURROGATE_SOURCES
@@ -26,6 +27,12 @@ set(TEST_SURROGATE_SOURCES
     src/opus.cpp
     src/randomlhs.cpp
     src/surrogate.cpp
+    src/LinearSolver.cpp
+)
+
+set(TEST_LINEARSOLVER_SOURCES
+    test/test_LinearSolver.cpp
+    src/LinearSolver.cpp
 )
 
 include_directories(
@@ -34,7 +41,7 @@ include_directories(
 
 add_executable(demo ${SOURCES})
 add_executable(test_surrogate ${TEST_SURROGATE_SOURCES})
-
+add_executable(test_linearsolver ${TEST_LINEARSOLVER_SOURCES})
 
 target_include_directories(demo
     PRIVATE
@@ -48,6 +55,12 @@ target_include_directories(test_surrogate
     ${CERES_INCLUDE_DIRS}
 )
 
+target_include_directories(test_linearsolver
+    PRIVATE
+    ${PROJECT_SOURCE_DIR}/include
+    ${CERES_INCLUDE_DIRS}
+)
+
 target_link_libraries (demo 
     PRIVATE
     Eigen3::Eigen 
@@ -55,6 +68,12 @@ target_link_libraries (demo
 )
 
 target_link_libraries (test_surrogate 
+    PRIVATE
+    Eigen3::Eigen
+    ${CERES_LIBRARIES}
+)
+
+target_link_libraries (test_linearsolver 
     PRIVATE
     Eigen3::Eigen
     ${CERES_LIBRARIES}
