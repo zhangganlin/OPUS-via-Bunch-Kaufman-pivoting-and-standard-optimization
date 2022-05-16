@@ -1,5 +1,6 @@
 #include "surrogate.hpp"
 #include <iostream>
+#include "tsc_x86.h"
 
 using namespace std;
 
@@ -30,8 +31,10 @@ double evaluate_surrogate_gt( double* x, double* points,  double* lambda_c, int 
 }
 
 void test_eval1(){
+    myInt64 gt_start,cur_start,gt_time,cur_time;
     int N = 154;
     int d = 4;
+    int repeat = 100000;
     double* x = (double*)malloc(d*sizeof(double));
     double* points = (double*)malloc(N*d*sizeof(double));
     double* lambda_c = (double*)malloc((N+d+1)*sizeof(double));
@@ -77,11 +80,24 @@ void test_eval1(){
     lambda_c[121]=443.253554; lambda_c[122]=449.913754; lambda_c[123]=108.616476; lambda_c[124]=632.558319; lambda_c[125]=-30.582044; lambda_c[126]=117.157762; lambda_c[127]=-365.477117; lambda_c[128]=-292.773520; lambda_c[129]=-456.420495; lambda_c[130]=-589.350284; lambda_c[131]=-1282.564050; lambda_c[132]=441.461004; lambda_c[133]=-516.541504; lambda_c[134]=308.574260; lambda_c[135]=-345.638574; lambda_c[136]=-884.145288; lambda_c[137]=-436.773041; lambda_c[138]=159.798251; lambda_c[139]=-303.669522; lambda_c[140]=164.930906; 
     lambda_c[141]=60.747162; lambda_c[142]=-167.563233; lambda_c[143]=85.086316; lambda_c[144]=563.691916; lambda_c[145]=-368.385991; lambda_c[146]=23.226543; lambda_c[147]=902.981998; lambda_c[148]=98.612159; lambda_c[149]=297.449193; lambda_c[150]=226.902049; lambda_c[151]=-723.982869; lambda_c[152]=567.000566; lambda_c[153]=-701.764077; lambda_c[154]=301.144511; lambda_c[155]=1272.400533; lambda_c[156]=-832.985018; lambda_c[157]=98.960879; lambda_c[158]=-5564.671793; 
 
-    double groundtruth = evaluate_surrogate_gt(x,points,lambda_c,N,d);
+
+    gt_start = start_tsc();
+    double groundtruth,result;
+    for(int i = 0; i < repeat; i++){
+        groundtruth = evaluate_surrogate_gt(x,points,lambda_c,N,d);
+    }
+    gt_time = stop_tsc(gt_start);
     cout << "groundtruth: "<<groundtruth<<endl; 
 
-    double result = evaluate_surrogate(x,points,lambda_c,N,d);
+    cur_start = start_tsc();
+    for(int i = 0; i < repeat; i++){
+        result = evaluate_surrogate(x,points,lambda_c,N,d);
+    }
+    cur_time = stop_tsc(cur_start);
     cout << "current result: "<< result << endl;
+
+    cout << "current cycles: "<< cur_time/(double)repeat << endl;
+    cout << "groundtruth cycles: "<< gt_time/(double)repeat << endl;
 
 }
 
