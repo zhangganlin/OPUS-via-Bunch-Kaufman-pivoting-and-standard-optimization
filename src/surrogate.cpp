@@ -82,6 +82,7 @@ void build_surrogate_eigen(double** points,  double* f, int N, int d, double* la
 void build_surrogate(double* points, double* f, int N, int d, double* lambda_c){
     double* A = (double*)malloc((N + d + 1)*(N + d + 1)*sizeof(double));
     double* b = (double*)malloc((N + d + 1)*sizeof(double));
+
     double phi, error;
     memset(A, 0, (N + d + 1) * (N + d + 1) * sizeof(double));
     memset(b, 0, (N + d + 1) * sizeof(double));
@@ -133,8 +134,28 @@ void build_surrogate(double* points, double* f, int N, int d, double* lambda_c){
     get_eigen_vector(b, b_e, N + d + 1);
     lambda_c_e = A_e.colPivHouseholderQr().solve(b_e);
     get_double_vector(lambda_c, lambda_c_e, N + d + 1);
+    
+    /*for debug:-----------------------------------------------
+    cout << "n:"<<N+d+1<<endl;
+    for(int i = 0; i < N+d+1; i++){
+        for(int j = 0; j < N+d+1; j++){
+            printf("A[%d] = %lf; ",i*(N+d+1)+j,A[i*(N+d+1)+j]);
+        }
+        cout << endl;
+    }
 
-    // LUdecomp(A,b,lambda_c,N,d);
+    for(int i =0; i < N+d+1;i++){
+        printf("b[%d]=%lf; ",i,b[i]);
+    }
+    cout << endl;
+
+    cout << "x should be:\n";
+    for(int i = 0; i < N+d+1;i++){
+        cout << lambda_c[i] << " ";
+    }
+    cout << endl;
+    /----------------------------------------------------------*/
+
     free(A);
     free(b);
 }

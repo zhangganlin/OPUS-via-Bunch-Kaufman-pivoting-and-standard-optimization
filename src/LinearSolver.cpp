@@ -266,6 +266,8 @@ void BunchKaufman(double* A, double* L, int* P, int* pivot, int M){
                  }
                 pivot[k] = 2;
                 k = k + 2;
+
+                //!!!!!!!!!!!!!!!!!!!!!!!! may cause invalid read and write here 
                 for (i = 0; i < M; i++){
                     A[i*M + i+1] = A[(i+1)*M +i];
                 }
@@ -364,8 +366,10 @@ void solve_BunchKaufman(double* A, double* x, double* b, int n){
     }
 
     free(L);
-    free(P);
-    free(pivot);
     free(Pb);
     free(DLTPx);
+    free(LTPx);
+    free(Px);
+    free(P);
+    free(pivot);
 }
