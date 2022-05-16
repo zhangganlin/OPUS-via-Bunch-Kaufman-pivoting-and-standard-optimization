@@ -267,8 +267,7 @@ void BunchKaufman(double* A, double* L, int* P, int* pivot, int M){
                 pivot[k] = 2;
                 k = k + 2;
 
-                //!!!!!!!!!!!!!!!!!!!!!!!! may cause invalid read and write here 
-                for (i = 0; i < M; i++){
+                for (i = 0; i < M-1; i++){
                     A[i*M + i+1] = A[(i+1)*M +i];
                 }
             }

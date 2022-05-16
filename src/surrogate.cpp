@@ -128,13 +128,16 @@ void build_surrogate(double* points, double* f, int N, int d, double* lambda_c){
     // }
 
     for(int i = 0; i < N; i++) b[i] = f[i];
-    Eigen::MatrixXd A_e;
-    Eigen::VectorXd b_e, lambda_c_e;
-    get_eigen_matrix(A, A_e, N + d + 1, N + d + 1);
-    get_eigen_vector(b, b_e, N + d + 1);
-    lambda_c_e = A_e.colPivHouseholderQr().solve(b_e);
-    get_double_vector(lambda_c, lambda_c_e, N + d + 1);
     
+    // Eigen::MatrixXd A_e;
+    // Eigen::VectorXd b_e, lambda_c_e;
+    // get_eigen_matrix(A, A_e, N + d + 1, N + d + 1);
+    // get_eigen_vector(b, b_e, N + d + 1);
+    // lambda_c_e = A_e.colPivHouseholderQr().solve(b_e);
+    // get_double_vector(lambda_c, lambda_c_e, N + d + 1);
+    
+
+    solve_BunchKaufman(A,lambda_c,b,N+d+1);
     /*for debug:-----------------------------------------------
     cout << "n:"<<N+d+1<<endl;
     for(int i = 0; i < N+d+1; i++){

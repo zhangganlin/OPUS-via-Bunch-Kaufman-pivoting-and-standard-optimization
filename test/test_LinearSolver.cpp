@@ -492,5 +492,5 @@ int main(){
     // testBunchKaufman2();
     // testBunchKaufman3();
     // testBunchKaufman4();
-    test_BunchKaufmanAndSolver2();
+    test_BunchKaufmanAndSolver1();
 }
