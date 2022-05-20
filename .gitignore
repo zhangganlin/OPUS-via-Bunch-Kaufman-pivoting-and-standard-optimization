@@ -9,3 +9,4 @@ build/*
 LinearSolverBuild/build
 Matrix.txt
 test_eval.txt
+size*.txt
