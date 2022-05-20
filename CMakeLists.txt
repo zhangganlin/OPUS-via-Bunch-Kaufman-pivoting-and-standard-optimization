@@ -35,6 +35,12 @@ set(TEST_LINEARSOLVER_SOURCES
     src/LinearSolver.cpp
 )
 
+set(TEST_EVAL_SURR_SOURCES
+    test/test_eval_surrogate.cpp
+    src/LinearSolver.cpp
+    src/surrogate.cpp
+)
+
 include_directories(
     ${CERES_INCLUDE_DIR}
 )
@@ -42,6 +48,7 @@ include_directories(
 add_executable(demo ${SOURCES})
 add_executable(test_surrogate ${TEST_SURROGATE_SOURCES})
 add_executable(test_linearsolver ${TEST_LINEARSOLVER_SOURCES})
+add_executable(test_eval_surr ${TEST_EVAL_SURR_SOURCES})
 
 target_include_directories(demo
     PRIVATE
@@ -58,7 +65,11 @@ target_include_directories(test_surrogate
 target_include_directories(test_linearsolver
     PRIVATE
     ${PROJECT_SOURCE_DIR}/include
-    ${CERES_INCLUDE_DIRS}
+)
+
+target_include_directories(test_eval_surr
+    PRIVATE
+    ${PROJECT_SOURCE_DIR}/include
 )
 
 target_link_libraries (demo 
@@ -74,6 +85,12 @@ target_link_libraries (test_surrogate
 )
 
 target_link_libraries (test_linearsolver 
+    PRIVATE
+    Eigen3::Eigen
+    ${CERES_LIBRARIES}
+)
+
+target_link_libraries (test_eval_surr
     PRIVATE
     Eigen3::Eigen
     ${CERES_LIBRARIES}

@@ -179,13 +179,13 @@ double evaluate_surrogate( double* x, double* points,  double* lambda_c, int N, 
         phi = 0;
         // flops: 3d
 
-        id = i * d;
+        int id = i * d;
 
         for(int j = 0; j < d; j++){
             error = x[j] - points[id + j];
             phi += error * error;
         }
-        sq_phi = sqrt(phi);            // flops: 1
+        double sq_phi = sqrt(phi);            // flops: 1
         phi = phi * sq_phi;      // flops: 2
         res += phi * lambda_c[i];   // flops: 2
     }

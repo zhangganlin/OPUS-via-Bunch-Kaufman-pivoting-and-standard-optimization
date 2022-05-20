@@ -7,3 +7,5 @@ build/*
 .DS_Store
 .ipynb_checkpoints
 LinearSolverBuild/build
+Matrix.txt
+test_eval.txt
