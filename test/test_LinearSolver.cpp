@@ -1,4 +1,5 @@
 #include "LinearSolver.h"
+#include "test_utils.h"
 #include <iostream>
 #include <cstring>
 using namespace std;
@@ -482,6 +483,23 @@ void test_BunchKaufmanAndSolver2(){
 }
 
 
+void testBunchKaufmanBig(string matrix_path, int M){
+    double* A = (double*)malloc((M * M) * sizeof(double));
+    double* L = (double*)malloc((M * M) * sizeof(double));
+    int* P = (int*)malloc(M * sizeof(int));
+    int* pivot = (int*)malloc(M * sizeof(int));
+
+    read_matrix(A,M,M,matrix_path);
+
+    BunchKaufman(A, L, P, pivot, M);
+
+    free(A);
+    free(L);
+    free(P);
+    free(pivot);
+}
+
+
 int main(){
     // test_solve_diag();
     // test_solve_lower();
@@ -492,5 +510,6 @@ int main(){
     // testBunchKaufman2();
     // testBunchKaufman3();
     // testBunchKaufman4();
-    test_BunchKaufmanAndSolver1();
+    // test_BunchKaufmanAndSolver1();
+    testBunchKaufmanBig("../test_matrix/size5.txt",5);
 }

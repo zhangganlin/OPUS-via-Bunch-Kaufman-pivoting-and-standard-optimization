@@ -354,7 +354,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             // update best fitness
             solution->error = fit[i];
             // copy particle pos to gbest vector
-            memmove((void *)solution->gbest, (void *)(pos + i*settings->dim),
+            memcpy((void *)solution->gbest, (void *)(pos + i*settings->dim),
                     sizeof(double) * settings->dim);
         }
     }
@@ -427,13 +427,13 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             start = start_tsc();
             //6b
             //using surrogate model here
-            int num_runs = (1 << 10);
+            int num_runs = 1;//(1 << 10);
             myInt64 start, cycles;
             start = start_tsc();
             for(int t = 0; t < num_runs; t++){
-                for(l = 0; l < settings->r; l++){
-                    temp_result[l] = evaluate_surrogate(temp_pos + l * settings->dim, x_history, lambda_c,this_round_x_history_size,settings->dim);
-                }
+
+                evaluate_surrogate_batch(temp_pos,x_history,lambda_c,settings->r,this_round_x_history_size,settings->dim,temp_result);
+
             }
             cycles = stop_tsc(start) / num_runs;
 
@@ -445,9 +445,9 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
                     temp_res_min = temp_result[l];
                 }
             }
-            memmove((void *)(pos + i * settings->dim), (void *)(temp_pos + temp_idx * settings -> dim),
+            memcpy((void *)(pos + i * settings->dim), (void *)(temp_pos + temp_idx * settings -> dim),
                         sizeof(double) * settings->dim);
-            memmove((void *)(vel + i * settings->dim), (void *)(temp_vel + temp_idx *  settings->dim),
+            memcpy((void *)(vel + i * settings->dim), (void *)(temp_vel + temp_idx *  settings->dim),
                         sizeof(double) * settings->dim);
             
             if (valid_x_history_size>=x_history_size){
@@ -456,7 +456,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
                 lambda_c = (double*)realloc(lambda_c,(x_history_size*2 + settings->dim + 1) * sizeof(double));
                 x_history_size += x_history_size;
             }
-            memmove((void *)(x_history + valid_x_history_size * settings->dim), (void *)(temp_pos + temp_idx * settings->dim),
+            memcpy((void *)(x_history + valid_x_history_size * settings->dim), (void *)(temp_pos + temp_idx * settings->dim),
                         sizeof(double) * settings->dim);
             cycle_stastic.step6b[step] += stop_tsc(start);
             // -----------------------------------------------------------------------------------
@@ -475,7 +475,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             if (fit[i] < fit_b[i]) {
                 fit_b[i] = fit[i];
                 // copy contents of pos[i] to pos_b[i]
-                memmove((void *)(pos_b + i * settings -> dim), (void *)(pos + i * settings->dim),
+                memcpy((void *)(pos_b + i * settings -> dim), (void *)(pos + i * settings->dim),
                         sizeof(double) * settings->dim);
             }            
             // update gbest??
@@ -483,7 +483,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
                 // update best fitness
                 solution->error = fit[i];
                 // copy particle pos to gbest vector
-                memmove((void *)solution->gbest, (void *)(pos + i * settings->dim),
+                memcpy((void *)solution->gbest, (void *)(pos + i * settings->dim),
                         sizeof(double) * settings->dim);
             }
             // -----------------------------------------------------------------------------------
@@ -512,7 +512,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
         using ceres::Solver;
 
         Problem problem;
-        memmove( (void *)x_optimized,(void *)solution->gbest,
+        memcpy( (void *)x_optimized,(void *)solution->gbest,
                         sizeof(double) * settings->dim);
         CostFunction* cost_function =
             new AutoDiffCostFunction<CostFunctor, 1, OPUS_DIM>(new CostFunctor);
@@ -551,7 +551,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             f_opt = obj_fun(x_optimized,settings->dim,obj_fun_params);
             if(f_opt<solution->error){
                 solution->error = f_opt;
-                memmove((void *)solution->gbest, (void *)x_optimized,
+                memcpy((void *)solution->gbest, (void *)x_optimized,
                     sizeof(double) * settings->dim);
             }
 
@@ -561,7 +561,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
                 lambda_c = (double*)realloc(lambda_c,(x_history_size*2 + settings->dim + 1) * sizeof(double));
                 x_history_size += x_history_size;
             }
-            memmove((void *)(x_history + settings->dim * valid_x_history_size), (void *)x_optimized,
+            memcpy((void *)(x_history + settings->dim * valid_x_history_size), (void *)x_optimized,
                         sizeof(double) * settings->dim);
 
             f_history[valid_x_history_size] = f_opt;
