@@ -16,7 +16,7 @@
 
 #include<typeinfo>
 
-double** points4opt;
+double* points4opt;
 double* lambda_c4opt; 
 int N4opt;
 int d4opt;
@@ -32,7 +32,7 @@ struct CostFunctor {
             phi = T(0);
             // flops: 3d
             for(int j = 0; j < d4opt; j++){
-                error = x[j] - points4opt[i][j];
+                error = x[j] - points4opt[i * d4opt + j];
                 phi += error * error;
             }
             phi = ceres::sqrt(phi);                 // flops: 1
@@ -239,12 +239,9 @@ void opus_settings_free(opus_settings_t *settings) {
     free(settings);
 }
 
-
-double **opus_matrix_new(int size, int dim) {
-    double **m = (double **)malloc(size * sizeof(double *));
-    for (int i=0; i<size; i++) {
-        m[i] = (double *)malloc(dim * sizeof(double));
-    }
+// TODO: change matrix to 1d
+double *opus_matrix_new(int size, int dim) {
+    double* m = (double*)malloc(size * dim * sizeof(double));
     return m;
 }
 
@@ -253,18 +250,14 @@ double *opus_vector_new(int dim){
     return m;
 }
 
-double ** opus_matrix_extend(int old_size, int dim, double** matrix) {
-    matrix = (double **)realloc(matrix,2*old_size * sizeof(double *));
-    for (int i=old_size; i<2*old_size; i++) {
-        matrix[i] = (double *)malloc(dim * sizeof(double));
-    }
+// TODO: change matrix to 1d
+double * opus_matrix_extend(int old_size, int dim, double* matrix) {
+    matrix = (double *)realloc(matrix, 2*old_size*dim*sizeof(double));
     return matrix;
 }
 
-void opus_matrix_free(double **m, int size) {
-    for (int i=0; i<size; i++) {
-        free(m[i]);
-    }
+// TODO: Change pos_z to 1d
+void opus_matrix_free(double *m) {
     free(m);
 }
 
@@ -281,12 +274,14 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
 
     google::InitGoogleLogging("opt");
     // Particles
-    double **pos_z = opus_matrix_new(settings->k_size, settings->dim);
-    double **pos = opus_matrix_new(settings->size, settings->dim); // position matrix
-    double **temp_pos = opus_matrix_new(settings->r, settings->dim);
-    double **temp_vel = opus_matrix_new(settings->r, settings->dim);
-    double **vel = opus_matrix_new(settings->size, settings->dim); // velocity matrix
-    double **pos_b = opus_matrix_new(settings->size, settings->dim); // best position matrix
+    // TODO: change matrix to 1d
+    double *pos_z = opus_matrix_new(settings->k_size, settings->dim);
+    double *pos = opus_matrix_new(settings->size, settings->dim); // position matrix
+    double *temp_pos = opus_matrix_new(settings->r, settings->dim);
+    double *temp_vel = opus_matrix_new(settings->r, settings->dim);
+    double *vel = opus_matrix_new(settings->size, settings->dim); // velocity matrix
+    double *pos_b = opus_matrix_new(settings->size, settings->dim); // best position matrix
+
     fz_t *fit_z = (fz_t *)malloc(settings->k_size * sizeof(fz_t));
     double *fit = (double *)malloc(settings->size * sizeof(double));
     double *fit_b = (double *)malloc(settings->size * sizeof(double));
@@ -295,7 +290,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
 
 
     int x_history_size = settings->size*100;
-    double **x_history = opus_matrix_new(x_history_size,settings->dim);
+    double *x_history = opus_matrix_new(x_history_size,settings->dim);
     double* lambda_c = (double*)malloc((x_history_size + settings->dim + 1) * sizeof(double));
     double* f_history = (double*)malloc((x_history_size) * sizeof(double));
     int valid_x_history_size;
@@ -323,13 +318,15 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     // Step 1-4 ------------------------------------------------------------------------------------
     // SWARM INITIALIZATION
     // for each particle
+
+    // TODO: Change pos_z to 1d
     randomLHS(settings->k_size,settings->dim,pos_z,*settings->range_lo,*settings->range_hi);
 
     start = start_tsc();
 
-
+    // TODO: Change pos_z to 1d
     for(i=0; i<settings->k_size;i++){
-        fit_z[i] = (fz_t){obj_fun(pos_z[i], settings->dim, obj_fun_params),i};
+        fit_z[i] = (fz_t){obj_fun(pos_z + i * settings->dim, settings->dim, obj_fun_params),i};
     }
     qsort(fit_z,settings->k_size,sizeof(fz_t),fz_compare); // fit_z[0] with smallest f value
 
@@ -343,19 +340,21 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             u = settings->range_lo[d] + (settings->range_hi[d] - settings->range_lo[d]) * \
                 RNG_UNIFORM();
             // initialize position, best position is the same
-            pos_b[i][d] = x_history[i][d] = pos[i][d] = pos_z[fit_z[i].index][d];
+            // TODO: Change pos_z, pos_b, pos, x_history to 1d
+            pos_b[i * settings -> dim + d] = x_history[i * settings -> dim + d] = pos[i * settings -> dim + d] = pos_z[fit_z[i].index * settings -> dim + d];
             // initialize velocity
-            vel[i][d] = (u-pos[i][d]) / 2.;
+            // TODO: Change pos to 1d
+            vel[i * settings -> dim + d] = (u-pos[i * settings -> dim + d]) / 2.;
         }
         // update particle fitness
-        fit[i] = obj_fun(pos[i], settings->dim, obj_fun_params);
+        fit[i] = obj_fun(pos + i * settings->dim, settings->dim, obj_fun_params);
         fit_b[i] = fit[i]; // this is also the personal best
         // update gbest??
         if (fit[i] < solution->error) {
             // update best fitness
             solution->error = fit[i];
             // copy particle pos to gbest vector
-            memmove((void *)solution->gbest, (void *)pos[i],
+            memmove((void *)solution->gbest, (void *)(pos + i*settings->dim),
                     sizeof(double) * settings->dim);
         }
     }
@@ -408,17 +407,17 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
                     rho1 = settings->c1 * RNG_UNIFORM();
                     rho2 = settings->c2 * RNG_UNIFORM();
                     // update velocity
-                    temp_vel[l][d] = w * vel[i][d] +	\
-                        rho1 * (pos_b[i][d] - pos[i][d]) +	\
-                        rho2 * (solution->gbest[d] - pos[i][d]);
+                    temp_vel[l * settings->dim + d] = w * vel[i * settings->dim + d] +	\
+                        rho1 * (pos_b[i * settings->dim + d] - pos[i * settings->dim + d]) +	\
+                        rho2 * (solution->gbest[d] - pos[i * settings->dim + d]);
                     // update position
-                    temp_pos[l][d] = pos[i][d] + temp_vel[l][d];
+                    temp_pos[l * settings->dim + d] = pos[i * settings->dim + d] + temp_vel[l * settings->dim + d];
                     // clamp position within bounds
-                    if (temp_pos[l][d] < settings->range_lo[d]) {
-                        temp_pos[l][d] = settings->range_lo[d];
+                    if (temp_pos[l * settings->dim + d] < settings->range_lo[d]) {
+                        temp_pos[l * settings->dim + d] = settings->range_lo[d];
                         // temp_vel[l][d] = 0;
-                    } else if (temp_pos[l][d] > settings->range_hi[d]) {
-                        temp_pos[l][d] = settings->range_hi[d];
+                    } else if (temp_pos[l * settings->dim + d] > settings->range_hi[d]) {
+                        temp_pos[l * settings->dim + d] = settings->range_hi[d];
                         // temp_vel[l][d] = 0;
                     }
                 }
@@ -433,7 +432,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             start = start_tsc();
             for(int t = 0; t < num_runs; t++){
                 for(l = 0; l < settings->r; l++){
-                    temp_result[l] = evaluate_surrogate(temp_pos[l],x_history,lambda_c,this_round_x_history_size,settings->dim);
+                    temp_result[l] = evaluate_surrogate(temp_pos + l * settings->dim, x_history, lambda_c,this_round_x_history_size,settings->dim);
                 }
             }
             cycles = stop_tsc(start) / num_runs;
@@ -446,9 +445,9 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
                     temp_res_min = temp_result[l];
                 }
             }
-            memmove((void *)pos[i], (void *)temp_pos[temp_idx],
+            memmove((void *)(pos + i * settings->dim), (void *)(temp_pos + temp_idx * settings -> dim),
                         sizeof(double) * settings->dim);
-            memmove((void *)vel[i], (void *)temp_vel[temp_idx],
+            memmove((void *)(vel + i * settings->dim), (void *)(temp_vel + temp_idx *  settings->dim),
                         sizeof(double) * settings->dim);
             
             if (valid_x_history_size>=x_history_size){
@@ -457,7 +456,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
                 lambda_c = (double*)realloc(lambda_c,(x_history_size*2 + settings->dim + 1) * sizeof(double));
                 x_history_size += x_history_size;
             }
-            memmove((void *)x_history[valid_x_history_size], (void *)temp_pos[temp_idx],
+            memmove((void *)(x_history + valid_x_history_size * settings->dim), (void *)(temp_pos + temp_idx * settings->dim),
                         sizeof(double) * settings->dim);
             cycle_stastic.step6b[step] += stop_tsc(start);
             // -----------------------------------------------------------------------------------
@@ -466,7 +465,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             // step 7-8 ---------------------------------------------------------------------------
             // update particle fitness
             start = start_tsc();
-            fit[i] = obj_fun(pos[i], settings->dim, obj_fun_params);
+            fit[i] = obj_fun(pos + i * settings->dim, settings->dim, obj_fun_params);
             cycle_stastic.step7[step] += stop_tsc(start);
             
             start = start_tsc();
@@ -476,7 +475,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             if (fit[i] < fit_b[i]) {
                 fit_b[i] = fit[i];
                 // copy contents of pos[i] to pos_b[i]
-                memmove((void *)pos_b[i], (void *)pos[i],
+                memmove((void *)(pos_b + i * settings -> dim), (void *)(pos + i * settings->dim),
                         sizeof(double) * settings->dim);
             }            
             // update gbest??
@@ -484,7 +483,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
                 // update best fitness
                 solution->error = fit[i];
                 // copy particle pos to gbest vector
-                memmove((void *)solution->gbest, (void *)pos[i],
+                memmove((void *)solution->gbest, (void *)(pos + i * settings->dim),
                         sizeof(double) * settings->dim);
             }
             // -----------------------------------------------------------------------------------
@@ -543,7 +542,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
         for(j = 0; j < valid_x_history_size; j++){
             temp_dist = 0;
             for(d = 0; d < settings->dim; d++){
-                temp_dist += (x_optimized[d] - x_history[j][d])*(x_optimized[d] - x_history[j][d]);
+                temp_dist += (x_optimized[d] - x_history[j * settings -> dim + d])*(x_optimized[d] - x_history[j * settings->dim + d]);
             }
             min_dist = min_dist<temp_dist? min_dist:temp_dist;
         }
@@ -562,7 +561,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
                 lambda_c = (double*)realloc(lambda_c,(x_history_size*2 + settings->dim + 1) * sizeof(double));
                 x_history_size += x_history_size;
             }
-            memmove((void *)x_history[valid_x_history_size], (void *)x_optimized,
+            memmove((void *)(x_history + settings->dim * valid_x_history_size), (void *)x_optimized,
                         sizeof(double) * settings->dim);
 
             f_history[valid_x_history_size] = f_opt;
@@ -580,13 +579,14 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     }
 
     // free resources
-    opus_matrix_free(pos_z, settings->size);
-    opus_matrix_free(pos, settings->size);
-    opus_matrix_free(vel, settings->size);
-    opus_matrix_free(pos_b, settings->size);
-    opus_matrix_free(temp_pos,settings->r);
-    opus_matrix_free(temp_vel,settings->r);
-    opus_matrix_free(x_history,x_history_size);
+    // TODO: Change pos_z to 1d
+    opus_matrix_free(pos_z);
+    opus_matrix_free(pos);
+    opus_matrix_free(vel);
+    opus_matrix_free(pos_b);
+    opus_matrix_free(temp_pos);
+    opus_matrix_free(temp_vel);
+    opus_matrix_free(x_history);
 
     free(fit_z);
     free(fit);

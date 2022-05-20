@@ -15,5 +15,5 @@ void findorder(const std::vector<T> & v, std::vector<int> & order);
 double randfrom(double min, double max);
 
 
-void randomLHS(int n, int k, double ** matrix, double range_lo, double range_hi);
+void randomLHS(int n, int k, double * matrix, double range_lo, double range_hi);
     

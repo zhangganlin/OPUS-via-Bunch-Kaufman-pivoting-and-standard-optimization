@@ -172,8 +172,8 @@ void build_surrogate(double** points, double* f, int N, int d, double* lambda_c)
 
 double evaluate_surrogate( double* x, double* points,  double* lambda_c, int N, int d){
     // total flops: 3Nd + 5N + 2d + 1
-    double phi, error, res = 0;
-    
+    double phi, error, res = 0, sq_phi;
+    int id;
     // flops: 3Nd + 5N
     for(int i = 0; i < N; i++){
         phi = 0;

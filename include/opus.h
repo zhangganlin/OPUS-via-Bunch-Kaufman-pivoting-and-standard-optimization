@@ -73,8 +73,8 @@ int fz_compare(const void *a, const void *b);
 
 void opus_settings_free(opus_settings_t *settings);
 
-double **opus_matrix_new(int size, int dim);
+double *opus_matrix_new(int size, int dim);
 
-double ** opus_matrix_extend(int old_size, int dim, double** matrix);
+double * opus_matrix_extend(int old_size, int dim, double* matrix);
 
 #endif // OPUS_H_
