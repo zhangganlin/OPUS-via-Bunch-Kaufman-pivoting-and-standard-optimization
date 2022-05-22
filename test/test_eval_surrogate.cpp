@@ -345,6 +345,7 @@ void evaluate_surrogate_unroll_8_sqrt_vec( double* x, double* points,  double* l
 
 void generate_random(double* arr, int n){
     for(int i = 0; i < n; i++){
+        cout << i << endl;
         arr[i] = rand();
     }
 }
@@ -447,30 +448,50 @@ void test_gt(){
     int d = 17;
     int repeat = 10000;
     int warmup_iter = 1000;
-    double* x = (double*)malloc(N_x * d * sizeof(double));
-    double* points = (double*)malloc(N_points * d * sizeof(double));
-    double* lambda_c = (double*)malloc((N_points + d + 1)*sizeof(double));
+    double* x = (double*)aligned_alloc(32, N_x * d * sizeof(double));
+    double* points = (double*)aligned_alloc(32, N_points * d * sizeof(double));
+    double* lambda_c = (double*)aligned_alloc(32, (N_points + d + 1)*sizeof(double));
+    cout << x << endl;
     generate_random(x, N_x * d);
-    generate_random(points, N_points * d);
-    generate_random(lambda_c, N_points + d + 1);
+    // generate_random(points, N_points * d);
+    // generate_random(lambda_c, N_points + d + 1);
 
-    double* groundtruth = (double*)malloc(N_x * sizeof(double));
+    // double* groundtruth = (double*)aligned_alloc(32, N_x * sizeof(double));
+    // double* result8_sqrt_vec = (double*)aligned_alloc(32, N_x * sizeof(double));
+    // evaluate_surrogate_gt( x, points,  lambda_c, N_x, N_points, d, groundtruth);
+    // cout << "groundtruth: "<<groundtruth[0]<<endl; 
+    // evaluate_surrogate_unroll_8_sqrt_vec( x, points,  lambda_c, N_x, N_points, d, result8_sqrt_vec);
+    // cout << "result of unrolling-8-sqrt-vec: "<<result8_sqrt_vec[0]<<endl; 
 
     //------------------------
     // test for ground truth
     //------------------------
 
-    for(int i = 0; i < warmup_iter; i++){
-        evaluate_surrogate_gt( x, points,  lambda_c, N_x, N_points, d, groundtruth);
-    }
-    gt_start = start_tsc();
-    for(int i = 0; i < repeat; i++){
-        evaluate_surrogate_gt( x, points,  lambda_c, N_x, N_points, d, groundtruth);
-    }
-    gt_time = stop_tsc(gt_start);
+    // for(int i = 0; i < warmup_iter; i++){
+    //     evaluate_surrogate_gt( x, points,  lambda_c, N_x, N_points, d, groundtruth);
+    // }
+    // gt_start = start_tsc();
+    // for(int i = 0; i < repeat; i++){
+    //     evaluate_surrogate_gt( x, points,  lambda_c, N_x, N_points, d, groundtruth);
+    // }
+    // gt_time = stop_tsc(gt_start);
+
+    //------------------------
+    // test for ground truth
+    //------------------------
+
+    // for(int i = 0; i < warmup_iter; i++){
+    //     evaluate_surrogate_gt( x, points,  lambda_c, N_x, N_points, d, groundtruth);
+    // }
+    // gt_start = start_tsc();
+    // for(int i = 0; i < repeat; i++){
+    //     evaluate_surrogate_gt( x, points,  lambda_c, N_x, N_points, d, groundtruth);
+    // }
+    // gt_time = stop_tsc(gt_start);
+
+
 }
 
 int main(){
-    test_eval1();
     test_gt();
 }
