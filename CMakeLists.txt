@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.5)
 
 project(OPUS)
 
-# set(CXX_FLAGS -o3)
+# set(CXX_FLAGS -O3)
+set(CXX_FLAGS "-march=native")
 
 enable_testing()
 
