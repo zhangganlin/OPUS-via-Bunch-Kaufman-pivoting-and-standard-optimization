@@ -253,8 +253,8 @@ void evaluate_surrogate_unroll_8_sqrt_vec( double* x, double* points,  double* l
     double res, error, phi_res, phi_sum, sq_phi;
     __m256d phi, phi_0, phi_1, phi_2, phi_3, phi_4, phi_5, phi_6, phi_7, phi_half_sum; 
     __m256d error_0, error_1, error_2, error_3, error_4, error_5, error_6, error_7;
-    double* history_phi = (double*)aligned_alloc(32, sizeof(double) * N_points);
-    double* phi_half = (double*)aligned_alloc(32, 4 * sizeof(double));
+    double* history_phi = (double*)malloc(sizeof(double) * N_points);
+    double* phi_half = (double*)malloc(4 * sizeof(double));
     int id, j, pa_d = 0, pb_d, pa_d_j, pb_d_j;
     for(int pa = 0; pa < N_x; pa++, pa_d += d){
         res = 0;
@@ -265,24 +265,22 @@ void evaluate_surrogate_unroll_8_sqrt_vec( double* x, double* points,  double* l
             j = 0;
             for(; j + 31 < d; j += 32){
                 pa_d_j = pa_d + j, pb_d_j = pb_d + j;
-                __m256d x_vec_0 = _mm256_load_pd((double*)(x + pa_d_j));
-                __m256d x_vec_1 = _mm256_load_pd((double*)(x + pa_d_j + 4));
-                __m256d x_vec_2 = _mm256_load_pd((double*)(x + pa_d_j + 8));
-                __m256d x_vec_3 = _mm256_load_pd((double*)(x + pa_d_j + 12));
-                __m256d x_vec_4 = _mm256_load_pd((double*)(x + pa_d_j + 16));
-                __m256d x_vec_5 = _mm256_load_pd((double*)(x + pa_d_j + 20));
-                __m256d x_vec_6 = _mm256_load_pd((double*)(x + pa_d_j + 24));
-                __m256d x_vec_7 = _mm256_load_pd((double*)(x + pa_d_j + 28));
-
-                __m256d points_vec_0 = _mm256_load_pd((double*)(points + pb_d_j));
-                __m256d points_vec_1 = _mm256_load_pd((double*)(points + pb_d_j + 4));
-                __m256d points_vec_2 = _mm256_load_pd((double*)(points + pb_d_j + 8));
-                __m256d points_vec_3 = _mm256_load_pd((double*)(points + pb_d_j + 12));
-                __m256d points_vec_4 = _mm256_load_pd((double*)(points + pb_d_j + 16));
-                __m256d points_vec_5 = _mm256_load_pd((double*)(points + pb_d_j + 20));
-                __m256d points_vec_6 = _mm256_load_pd((double*)(points + pb_d_j + 24));
-                __m256d points_vec_7 = _mm256_load_pd((double*)(points + pb_d_j + 28));
-
+                __m256d x_vec_0 = _mm256_loadu_pd((double*)(x + pa_d_j));
+                __m256d x_vec_1 = _mm256_loadu_pd((double*)(x + pa_d_j + 4));
+                __m256d x_vec_2 = _mm256_loadu_pd((double*)(x + pa_d_j + 8));
+                __m256d x_vec_3 = _mm256_loadu_pd((double*)(x + pa_d_j + 12));
+                __m256d x_vec_4 = _mm256_loadu_pd((double*)(x + pa_d_j + 16));
+                __m256d x_vec_5 = _mm256_loadu_pd((double*)(x + pa_d_j + 20));
+                __m256d x_vec_6 = _mm256_loadu_pd((double*)(x + pa_d_j + 24));
+                __m256d x_vec_7 = _mm256_loadu_pd((double*)(x + pa_d_j + 28));
+                __m256d points_vec_0 = _mm256_loadu_pd((double*)(points + pb_d_j));
+                __m256d points_vec_1 = _mm256_loadu_pd((double*)(points + pb_d_j + 4));
+                __m256d points_vec_2 = _mm256_loadu_pd((double*)(points + pb_d_j + 8));
+                __m256d points_vec_3 = _mm256_loadu_pd((double*)(points + pb_d_j + 12));
+                __m256d points_vec_4 = _mm256_loadu_pd((double*)(points + pb_d_j + 16));
+                __m256d points_vec_5 = _mm256_loadu_pd((double*)(points + pb_d_j + 20));
+                __m256d points_vec_6 = _mm256_loadu_pd((double*)(points + pb_d_j + 24));
+                __m256d points_vec_7 = _mm256_loadu_pd((double*)(points + pb_d_j + 28));
 
                 error_0 = _mm256_sub_pd(x_vec_0, points_vec_0);
                 error_1 = _mm256_sub_pd(x_vec_1, points_vec_1);
@@ -293,7 +291,6 @@ void evaluate_surrogate_unroll_8_sqrt_vec( double* x, double* points,  double* l
                 error_6 = _mm256_sub_pd(x_vec_6, points_vec_6);
                 error_7 = _mm256_sub_pd(x_vec_7, points_vec_7);
 
-                
                 phi_0 = _mm256_fmadd_pd(error_0, error_0, phi_0); 
                 phi_1 = _mm256_fmadd_pd(error_1, error_1, phi_1); 
                 phi_2 = _mm256_fmadd_pd(error_2, error_2, phi_2); 
@@ -314,7 +311,7 @@ void evaluate_surrogate_unroll_8_sqrt_vec( double* x, double* points,  double* l
                 )
             );
             phi_half_sum = _mm256_hadd_pd(phi, phi);
-            _mm256_store_pd((double*)phi_half, phi_half_sum);
+            _mm256_storeu_pd((double*)phi_half, phi_half_sum);
             phi_sum = phi_half[0] + phi_half[2];
 
             phi_res = 0;
@@ -341,12 +338,12 @@ void evaluate_surrogate_unroll_8_sqrt_vec( double* x, double* points,  double* l
         output[pa] = res;
     }
     free(history_phi);
+    free(phi_half);
 }
 
 void generate_random(double* arr, int n){
     for(int i = 0; i < n; i++){
-        cout << i << endl;
-        arr[i] = rand();
+        arr[i] = (double)rand()/ (double)RAND_MAX;
     }
 }
 
@@ -360,18 +357,18 @@ void test_eval1(){
     int d = 17;
     int repeat = 10000;
     int warmup_iter = 1000;
-    double* x = (double*)aligned_alloc(32, N_x * d * sizeof(double));
-    double* points = (double*)aligned_alloc(32, N_points * d * sizeof(double));
-    double* lambda_c = (double*)aligned_alloc(32, (N_points + d + 1)*sizeof(double));
+    double* x = (double*)malloc(N_x * d * sizeof(double));
+    double* points = (double*)malloc(N_points * d * sizeof(double));
+    double* lambda_c = (double*)malloc((N_points + d + 1)*sizeof(double));
     generate_random(x, N_x * d);
     generate_random(points, N_points * d);
     generate_random(lambda_c, N_points + d + 1);
 
-    double* result = (double*)aligned_alloc(32, N_x * sizeof(double));
-    double* result8 = (double*)aligned_alloc(32, N_x * sizeof(double));
-    double* result8_sqrt = (double*)aligned_alloc(32, N_x * sizeof(double));
-    double* result8_sqrt_vec = (double*)aligned_alloc(32, N_x * sizeof(double));
-    double* groundtruth = (double*)aligned_alloc(32, N_x * sizeof(double));
+    double* result = (double*)malloc(N_x * sizeof(double));
+    double* result8 = (double*)malloc(N_x * sizeof(double));
+    double* result8_sqrt = (double*)malloc(N_x * sizeof(double));
+    double* result8_sqrt_vec = (double*)malloc(N_x * sizeof(double));
+    double* groundtruth = (double*)malloc(N_x * sizeof(double));
 
     //------------------------
     // test for groundtruth
@@ -442,53 +439,70 @@ void test_eval1(){
 
 void test_gt(){
     srand(time(NULL));
-    myInt64 gt_start, gt_time;
+    myInt64 gt_start, gt_time, vec_start, vec_time, start8,time8;
 
     int N_points = 154, N_x = 154;
-    int d = 17;
-    int repeat = 10000;
-    int warmup_iter = 1000;
-    double* x = (double*)aligned_alloc(32, N_x * d * sizeof(double));
-    double* points = (double*)aligned_alloc(32, N_points * d * sizeof(double));
-    double* lambda_c = (double*)aligned_alloc(32, (N_points + d + 1)*sizeof(double));
-    cout << x << endl;
+    int d = 320;
+    int repeat = 1000;
+    int warmup_iter = 100;
+    double* x = (double*)malloc(N_x * d * sizeof(double));
+    double* points = (double*)malloc(N_points * d * sizeof(double));
+    double* lambda_c = (double*)malloc((N_points + d + 1)*sizeof(double));
     generate_random(x, N_x * d);
-    // generate_random(points, N_points * d);
-    // generate_random(lambda_c, N_points + d + 1);
+    generate_random(points, N_points * d);
+    generate_random(lambda_c, N_points + d + 1);
 
-    // double* groundtruth = (double*)aligned_alloc(32, N_x * sizeof(double));
-    // double* result8_sqrt_vec = (double*)aligned_alloc(32, N_x * sizeof(double));
-    // evaluate_surrogate_gt( x, points,  lambda_c, N_x, N_points, d, groundtruth);
-    // cout << "groundtruth: "<<groundtruth[0]<<endl; 
-    // evaluate_surrogate_unroll_8_sqrt_vec( x, points,  lambda_c, N_x, N_points, d, result8_sqrt_vec);
-    // cout << "result of unrolling-8-sqrt-vec: "<<result8_sqrt_vec[0]<<endl; 
+    // cout << x[32];
+    // exit(0);
+    double* groundtruth = (double*)malloc(N_x * sizeof(double));
+    double* result8_sqrt_vec = (double*)malloc(N_x * sizeof(double));
+    evaluate_surrogate_gt( x, points,  lambda_c, N_x, N_points, d, groundtruth);
+    cout << "groundtruth: "<<groundtruth[0]<<endl; 
+    evaluate_surrogate_unroll_8_sqrt_vec( x, points,  lambda_c, N_x, N_points, d, result8_sqrt_vec);
+    cout << "result of unrolling-8-sqrt-vec: "<<result8_sqrt_vec[0]<<endl; 
+
+    //------------------------
+    // test for vec
+    //------------------------
+
+    for(int i = 0; i < warmup_iter; i++){
+        evaluate_surrogate_unroll_8_sqrt_vec( x, points,  lambda_c, N_x, N_points, d, groundtruth);
+    }
+    vec_start = start_tsc();
+    for(int i = 0; i < repeat; i++){
+        evaluate_surrogate_unroll_8_sqrt_vec( x, points,  lambda_c, N_x, N_points, d, groundtruth);
+    }
+    vec_time = stop_tsc(vec_start);
 
     //------------------------
     // test for ground truth
     //------------------------
 
-    // for(int i = 0; i < warmup_iter; i++){
-    //     evaluate_surrogate_gt( x, points,  lambda_c, N_x, N_points, d, groundtruth);
-    // }
-    // gt_start = start_tsc();
-    // for(int i = 0; i < repeat; i++){
-    //     evaluate_surrogate_gt( x, points,  lambda_c, N_x, N_points, d, groundtruth);
-    // }
-    // gt_time = stop_tsc(gt_start);
+    for(int i = 0; i < warmup_iter; i++){
+        evaluate_surrogate_gt( x, points,  lambda_c, N_x, N_points, d, groundtruth);
+    }
+    gt_start = start_tsc();
+    for(int i = 0; i < repeat; i++){
+        evaluate_surrogate_gt( x, points,  lambda_c, N_x, N_points, d, groundtruth);
+    }
+    gt_time = stop_tsc(gt_start);
 
-    //------------------------
-    // test for ground truth
-    //------------------------
 
-    // for(int i = 0; i < warmup_iter; i++){
-    //     evaluate_surrogate_gt( x, points,  lambda_c, N_x, N_points, d, groundtruth);
-    // }
-    // gt_start = start_tsc();
-    // for(int i = 0; i < repeat; i++){
-    //     evaluate_surrogate_gt( x, points,  lambda_c, N_x, N_points, d, groundtruth);
-    // }
-    // gt_time = stop_tsc(gt_start);
+    for(int i = 0; i < warmup_iter; i++){
+        evaluate_surrogate_unroll_8_sqrt( x, points,  lambda_c, N_x, N_points, d, groundtruth);
+    }
+    start8 = start_tsc();
+    for(int i = 0; i < repeat; i++){
+        evaluate_surrogate_unroll_8_sqrt( x, points,  lambda_c, N_x, N_points, d, groundtruth);
+    }
+    time8 = stop_tsc(start8);
 
+
+
+    cout << "Compare running time: -----------" << endl;
+    cout << "groundtruth cycles: "<< gt_time/(double)repeat << endl;
+    cout << "current cycles of unrolling-8-sqrt: "<< time8/(double)repeat << " and performance improve is: " <<   ((gt_time/(double)repeat)-(time8/(double)repeat)) / (gt_time/(double)repeat) << endl;
+    cout << "current cycles of unrolling-8-sqrt-vec: "<< vec_time/(double)repeat << " and performance improve is: " <<   ((gt_time/(double)repeat)-(vec_time/(double)repeat)) / (gt_time/(double)repeat) << endl;
 
 }
 
