@@ -247,12 +247,166 @@ void evaluate_surrogate_unroll_8_sqrt( double* x, double* points,  double* lambd
     }
 }
 
+void evaluate_surrogate_unroll_8_sqrt_sample_vec( double* x, double* points,  double* lambda_c, int N_x, int N_points, int d, double* output){
+    // total flops: 3Nd + 5N + 2d + 1
+    __m256d phi_vec, phi_0_vec, phi_1_vec, phi_2_vec, phi_3_vec, phi_4_vec, phi_5_vec, phi_6_vec, phi_7_vec, phi_res_vec, sq_phi_vec; 
+    __m256d error_0_vec, error_1_vec, error_2_vec, error_3_vec, error_4_vec, error_5_vec, error_6_vec, error_7_vec;
+    __m256d x_vec_0, x_vec_1, x_vec_2, x_vec_3, x_vec_4, x_vec_5, x_vec_6, x_vec_7;
+    __m256d points_vec_0, points_vec_1, points_vec_2, points_vec_3, points_vec_4, points_vec_5, points_vec_6, points_vec_7;
+    __m256d lambda_c_vec, res_vec;
+    __m256i jump_idx = _mm256_set_epi64x(3*d, 2*d, d, 0);
+
+    double* history_phi_vec = (double*)malloc(sizeof(double) * N_points * 4);
+    int id, j, pa_d = 0, pb_d, pa_d_j, pb_d_j, d_4 = 4*d, pa = 0;
+    for(; pa + 3 < N_x; pa += 4, pa_d += d_4){
+        // flops: 3Nd + 5N
+        pb_d = 0;
+        for(int pb = 0; pb < N_points; pb++, pb_d += d){
+            phi_0_vec = phi_1_vec = phi_2_vec = phi_3_vec = phi_4_vec = phi_5_vec = phi_6_vec = phi_7_vec = _mm256_set1_pd(0);
+            j = 0;
+            for(; j + 7 < d; j += 8){
+                pa_d_j = pa_d + j, pb_d_j = pb_d + j;
+                x_vec_0 = _mm256_i64gather_pd((double*)(x + pa_d_j), jump_idx, sizeof(double));
+                x_vec_1 = _mm256_i64gather_pd((double*)(x + pa_d_j + 1), jump_idx, sizeof(double));
+                x_vec_2 = _mm256_i64gather_pd((double*)(x + pa_d_j + 2), jump_idx, sizeof(double));
+                x_vec_3 = _mm256_i64gather_pd((double*)(x + pa_d_j + 3), jump_idx, sizeof(double));
+                x_vec_4 = _mm256_i64gather_pd((double*)(x + pa_d_j + 4), jump_idx, sizeof(double));
+                x_vec_5 = _mm256_i64gather_pd((double*)(x + pa_d_j + 5), jump_idx, sizeof(double));
+                x_vec_6 = _mm256_i64gather_pd((double*)(x + pa_d_j + 6), jump_idx, sizeof(double));
+                x_vec_7 = _mm256_i64gather_pd((double*)(x + pa_d_j + 7), jump_idx, sizeof(double));
+
+                points_vec_0 = _mm256_broadcast_sd(points + pb_d_j);
+                points_vec_1 = _mm256_broadcast_sd(points + pb_d_j + 1);
+                points_vec_2 = _mm256_broadcast_sd(points + pb_d_j + 2);
+                points_vec_3 = _mm256_broadcast_sd(points + pb_d_j + 3);
+                points_vec_4 = _mm256_broadcast_sd(points + pb_d_j + 4);
+                points_vec_5 = _mm256_broadcast_sd(points + pb_d_j + 5);
+                points_vec_6 = _mm256_broadcast_sd(points + pb_d_j + 6);
+                points_vec_7 = _mm256_broadcast_sd(points + pb_d_j + 7);
+
+                error_0_vec = _mm256_sub_pd(x_vec_0, points_vec_0);
+                error_1_vec = _mm256_sub_pd(x_vec_1, points_vec_1);
+                error_2_vec = _mm256_sub_pd(x_vec_2, points_vec_2);
+                error_3_vec = _mm256_sub_pd(x_vec_3, points_vec_3);
+                error_4_vec = _mm256_sub_pd(x_vec_4, points_vec_4);
+                error_5_vec = _mm256_sub_pd(x_vec_5, points_vec_5);
+                error_6_vec = _mm256_sub_pd(x_vec_6, points_vec_6);
+                error_7_vec = _mm256_sub_pd(x_vec_7, points_vec_7);
+
+                phi_0_vec = _mm256_fmadd_pd(error_0_vec, error_0_vec, phi_0_vec); 
+                phi_1_vec = _mm256_fmadd_pd(error_1_vec, error_1_vec, phi_1_vec); 
+                phi_2_vec = _mm256_fmadd_pd(error_2_vec, error_2_vec, phi_2_vec); 
+                phi_3_vec = _mm256_fmadd_pd(error_3_vec, error_3_vec, phi_3_vec); 
+                phi_4_vec = _mm256_fmadd_pd(error_4_vec, error_4_vec, phi_4_vec); 
+                phi_5_vec = _mm256_fmadd_pd(error_5_vec, error_5_vec, phi_5_vec); 
+                phi_6_vec = _mm256_fmadd_pd(error_6_vec, error_6_vec, phi_6_vec); 
+                phi_7_vec = _mm256_fmadd_pd(error_7_vec, error_7_vec, phi_7_vec); 
+            }
+            phi_vec = _mm256_add_pd(
+                _mm256_add_pd(
+                    _mm256_add_pd(phi_0_vec, phi_1_vec), 
+                    _mm256_add_pd(phi_2_vec, phi_3_vec)
+                ),  
+                _mm256_add_pd(
+                    _mm256_add_pd(phi_4_vec, phi_5_vec), 
+                    _mm256_add_pd(phi_6_vec, phi_7_vec)
+                )
+            );
+            for(; j < d; j++){
+                x_vec_0 = _mm256_i64gather_pd((double*)(x + pa_d + j), jump_idx, sizeof(double));
+                points_vec_0 = _mm256_broadcast_sd(points + pb_d + j);
+                error_0_vec = _mm256_sub_pd(x_vec_0, points_vec_0);
+                phi_vec = _mm256_fmadd_pd(error_0_vec, error_0_vec, phi_vec); 
+            }
+
+            _mm256_storeu_pd((double*)(history_phi_vec + pb * 4), phi_vec);
+        }
+        res_vec = _mm256_set1_pd(0);
+        for(int pb = 0; pb < N_points; pb++){
+            phi_vec = _mm256_loadu_pd((double*)(history_phi_vec + pb*4));
+            lambda_c_vec = _mm256_broadcast_sd((double*)(lambda_c + pb));
+            sq_phi_vec = _mm256_sqrt_pd(phi_vec);
+            phi_vec = _mm256_mul_pd(phi_vec, sq_phi_vec);
+            res_vec = _mm256_fmadd_pd(phi_vec, lambda_c_vec, res_vec);
+        }
+        // flops: 2d
+        for(int i = 0; i < d; i++){
+            x_vec_0 = _mm256_i64gather_pd((double*)(x + pa_d + i), jump_idx, sizeof(double));
+            lambda_c_vec = _mm256_broadcast_sd((double*)(lambda_c + N_points + i));
+            res_vec =  _mm256_fmadd_pd(x_vec_0, lambda_c_vec, res_vec);
+        }
+        // flops: 1
+        lambda_c_vec = _mm256_broadcast_sd((double*)(lambda_c + N_points + d));
+        res_vec = _mm256_add_pd(res_vec, lambda_c_vec);
+        _mm256_storeu_pd((double*)(output + pa), res_vec);
+    }
+
+    double res, sq_phi, error;
+    double phi, phi_0, phi_1, phi_2, phi_3, phi_4, phi_5, phi_6, phi_7, phi_res; 
+    double error_0, error_1, error_2, error_3, error_4, error_5, error_6, error_7;
+    double* history_phi = (double*)malloc(sizeof(double) * N_points);
+    for(; pa < N_x; pa++, pa_d += d){
+        res = 0;
+        // flops: 3Nd + 5N
+        pb_d = 0;
+        for(int pb = 0; pb < N_points; pb++, pb_d += d){
+            phi_0 = phi_1 = phi_2 = phi_3 = phi_4 = phi_5 = phi_6 = phi_7 = 0; 
+            j = 0;
+            for(; j + 7 < d; j += 8){
+                pa_d_j = pa_d + j, pb_d_j = pb_d + j;
+                error_0 = x[pa_d_j] - points[pb_d + j];
+                error_1 = x[pa_d_j + 1] - points[pb_d_j + 1];
+                error_2 = x[pa_d_j + 2] - points[pb_d_j + 2];
+                error_3 = x[pa_d_j + 3] - points[pb_d_j + 3];
+                error_4 = x[pa_d_j + 4] - points[pb_d_j + 4];
+                error_5 = x[pa_d_j + 5] - points[pb_d_j + 5];
+                error_6 = x[pa_d_j + 6] - points[pb_d_j + 6];
+                error_7 = x[pa_d_j + 7] - points[pb_d_j + 7];
+                phi_0 += error_0 * error_0; 
+                phi_1 += error_1 * error_1; 
+                phi_2 += error_2 * error_2; 
+                phi_3 += error_3 * error_3; 
+                phi_4 += error_4 * error_4; 
+                phi_5 += error_5 * error_5; 
+                phi_6 += error_6 * error_6; 
+                phi_7 += error_7 * error_7; 
+            }
+            phi = phi_0 + phi_1 + phi_2 + phi_3 + phi_4 + phi_5 + phi_6 + phi_7;
+            phi_res = 0;
+            for(; j < d; j++){
+                error = x[pa_d + j] - points[pb_d + j];
+                phi_res += error * error;
+            }
+            phi += phi_res;
+            history_phi[pb] = phi;
+        }
+        
+        for(int pb = 0; pb < N_points; pb++){
+            phi = history_phi[pb];
+            sq_phi = sqrt(phi);              // flops: 1
+            phi = phi * sq_phi;                     // flops: 2
+            res += phi * lambda_c[pb];               // flops: 2
+        }
+        // flops: 2d
+        for(int i = 0; i < d; i++){
+            res += x[pa_d + i] * lambda_c[N_points + i];
+        }
+        // flops: 1
+        res += lambda_c[N_points + d];
+        output[pa] = res;
+    }
+    free(history_phi);
+    free(history_phi_vec);
+}
+
 void evaluate_surrogate_unroll_8_sqrt_vec( double* x, double* points,  double* lambda_c, int N_x, int N_points, int d, double* output){
     // total flops: 3Nd + 5N + 2d + 1
     // total flops: 3Nd + 5N + 2d + 1
     double res, error, phi_res, phi_sum, sq_phi;
     __m256d phi, phi_0, phi_1, phi_2, phi_3, phi_4, phi_5, phi_6, phi_7, phi_half_sum; 
     __m256d error_0, error_1, error_2, error_3, error_4, error_5, error_6, error_7;
+    __m256d x_vec_0, x_vec_1, x_vec_2, x_vec_3, x_vec_4, x_vec_5, x_vec_6, x_vec_7;
+    __m256d points_vec_0, points_vec_1, points_vec_2, points_vec_3, points_vec_4, points_vec_5, points_vec_6, points_vec_7;
     double* history_phi = (double*)malloc(sizeof(double) * N_points);
     double* phi_half = (double*)aligned_alloc(32, 4 * sizeof(double));
     int id, j, pa_d = 0, pb_d, pa_d_j, pb_d_j;
@@ -265,22 +419,22 @@ void evaluate_surrogate_unroll_8_sqrt_vec( double* x, double* points,  double* l
             j = 0;
             for(; j + 31 < d; j += 32){
                 pa_d_j = pa_d + j, pb_d_j = pb_d + j;
-                __m256d x_vec_0 = _mm256_loadu_pd((double*)(x + pa_d_j));
-                __m256d x_vec_1 = _mm256_loadu_pd((double*)(x + pa_d_j + 4));
-                __m256d x_vec_2 = _mm256_loadu_pd((double*)(x + pa_d_j + 8));
-                __m256d x_vec_3 = _mm256_loadu_pd((double*)(x + pa_d_j + 12));
-                __m256d x_vec_4 = _mm256_loadu_pd((double*)(x + pa_d_j + 16));
-                __m256d x_vec_5 = _mm256_loadu_pd((double*)(x + pa_d_j + 20));
-                __m256d x_vec_6 = _mm256_loadu_pd((double*)(x + pa_d_j + 24));
-                __m256d x_vec_7 = _mm256_loadu_pd((double*)(x + pa_d_j + 28));
-                __m256d points_vec_0 = _mm256_loadu_pd((double*)(points + pb_d_j));
-                __m256d points_vec_1 = _mm256_loadu_pd((double*)(points + pb_d_j + 4));
-                __m256d points_vec_2 = _mm256_loadu_pd((double*)(points + pb_d_j + 8));
-                __m256d points_vec_3 = _mm256_loadu_pd((double*)(points + pb_d_j + 12));
-                __m256d points_vec_4 = _mm256_loadu_pd((double*)(points + pb_d_j + 16));
-                __m256d points_vec_5 = _mm256_loadu_pd((double*)(points + pb_d_j + 20));
-                __m256d points_vec_6 = _mm256_loadu_pd((double*)(points + pb_d_j + 24));
-                __m256d points_vec_7 = _mm256_loadu_pd((double*)(points + pb_d_j + 28));
+                x_vec_0 = _mm256_loadu_pd((double*)(x + pa_d_j));
+                x_vec_1 = _mm256_loadu_pd((double*)(x + pa_d_j + 4));
+                x_vec_2 = _mm256_loadu_pd((double*)(x + pa_d_j + 8));
+                x_vec_3 = _mm256_loadu_pd((double*)(x + pa_d_j + 12));
+                x_vec_4 = _mm256_loadu_pd((double*)(x + pa_d_j + 16));
+                x_vec_5 = _mm256_loadu_pd((double*)(x + pa_d_j + 20));
+                x_vec_6 = _mm256_loadu_pd((double*)(x + pa_d_j + 24));
+                x_vec_7 = _mm256_loadu_pd((double*)(x + pa_d_j + 28));
+                points_vec_0 = _mm256_loadu_pd((double*)(points + pb_d_j));
+                points_vec_1 = _mm256_loadu_pd((double*)(points + pb_d_j + 4));
+                points_vec_2 = _mm256_loadu_pd((double*)(points + pb_d_j + 8));
+                points_vec_3 = _mm256_loadu_pd((double*)(points + pb_d_j + 12));
+                points_vec_4 = _mm256_loadu_pd((double*)(points + pb_d_j + 16));
+                points_vec_5 = _mm256_loadu_pd((double*)(points + pb_d_j + 20));
+                points_vec_6 = _mm256_loadu_pd((double*)(points + pb_d_j + 24));
+                points_vec_7 = _mm256_loadu_pd((double*)(points + pb_d_j + 28));
 
                 error_0 = _mm256_sub_pd(x_vec_0, points_vec_0);
                 error_1 = _mm256_sub_pd(x_vec_1, points_vec_1);
@@ -347,8 +501,10 @@ void evaluate_surrogate_unroll_8_vec_sqrt_vec( double* x, double* points,  doubl
     double res, error, phi_res, phi_sum, sq_phi;
     __m256d phi, phi_0, phi_1, phi_2, phi_3, phi_4, phi_5, phi_6, phi_7, phi_half_sum, sq_phi_vec; 
     __m256d error_0, error_1, error_2, error_3, error_4, error_5, error_6, error_7;
+    __m256d x_vec_0, x_vec_1, x_vec_2, x_vec_3, x_vec_4, x_vec_5, x_vec_6, x_vec_7;
+    __m256d points_vec_0, points_vec_1, points_vec_2, points_vec_3, points_vec_4, points_vec_5, points_vec_6, points_vec_7;
     __m256d lambda_c_vec, res_vec;
-    double* history_phi = (double*)malloc(sizeof(double) * N_points);
+    double* history_phi = (double*)aligned_alloc(32, sizeof(double) * N_points);
     double* phi_half = (double*)aligned_alloc(32, 4 * sizeof(double));
     double* res_half = (double*)aligned_alloc(32, 4 * sizeof(double));
     int id, j, pa_d = 0, pb_d, pa_d_j, pb_d_j;
@@ -361,22 +517,22 @@ void evaluate_surrogate_unroll_8_vec_sqrt_vec( double* x, double* points,  doubl
             j = 0;
             for(; j + 31 < d; j += 32){
                 pa_d_j = pa_d + j, pb_d_j = pb_d + j;
-                __m256d x_vec_0 = _mm256_loadu_pd((double*)(x + pa_d_j));
-                __m256d x_vec_1 = _mm256_loadu_pd((double*)(x + pa_d_j + 4));
-                __m256d x_vec_2 = _mm256_loadu_pd((double*)(x + pa_d_j + 8));
-                __m256d x_vec_3 = _mm256_loadu_pd((double*)(x + pa_d_j + 12));
-                __m256d x_vec_4 = _mm256_loadu_pd((double*)(x + pa_d_j + 16));
-                __m256d x_vec_5 = _mm256_loadu_pd((double*)(x + pa_d_j + 20));
-                __m256d x_vec_6 = _mm256_loadu_pd((double*)(x + pa_d_j + 24));
-                __m256d x_vec_7 = _mm256_loadu_pd((double*)(x + pa_d_j + 28));
-                __m256d points_vec_0 = _mm256_loadu_pd((double*)(points + pb_d_j));
-                __m256d points_vec_1 = _mm256_loadu_pd((double*)(points + pb_d_j + 4));
-                __m256d points_vec_2 = _mm256_loadu_pd((double*)(points + pb_d_j + 8));
-                __m256d points_vec_3 = _mm256_loadu_pd((double*)(points + pb_d_j + 12));
-                __m256d points_vec_4 = _mm256_loadu_pd((double*)(points + pb_d_j + 16));
-                __m256d points_vec_5 = _mm256_loadu_pd((double*)(points + pb_d_j + 20));
-                __m256d points_vec_6 = _mm256_loadu_pd((double*)(points + pb_d_j + 24));
-                __m256d points_vec_7 = _mm256_loadu_pd((double*)(points + pb_d_j + 28));
+                x_vec_0 = _mm256_loadu_pd((double*)(x + pa_d_j));
+                x_vec_1 = _mm256_loadu_pd((double*)(x + pa_d_j + 4));
+                x_vec_2 = _mm256_loadu_pd((double*)(x + pa_d_j + 8));
+                x_vec_3 = _mm256_loadu_pd((double*)(x + pa_d_j + 12));
+                x_vec_4 = _mm256_loadu_pd((double*)(x + pa_d_j + 16));
+                x_vec_5 = _mm256_loadu_pd((double*)(x + pa_d_j + 20));
+                x_vec_6 = _mm256_loadu_pd((double*)(x + pa_d_j + 24));
+                x_vec_7 = _mm256_loadu_pd((double*)(x + pa_d_j + 28));
+                points_vec_0 = _mm256_loadu_pd((double*)(points + pb_d_j));
+                points_vec_1 = _mm256_loadu_pd((double*)(points + pb_d_j + 4));
+                points_vec_2 = _mm256_loadu_pd((double*)(points + pb_d_j + 8));
+                points_vec_3 = _mm256_loadu_pd((double*)(points + pb_d_j + 12));
+                points_vec_4 = _mm256_loadu_pd((double*)(points + pb_d_j + 16));
+                points_vec_5 = _mm256_loadu_pd((double*)(points + pb_d_j + 20));
+                points_vec_6 = _mm256_loadu_pd((double*)(points + pb_d_j + 24));
+                points_vec_7 = _mm256_loadu_pd((double*)(points + pb_d_j + 28));
 
                 error_0 = _mm256_sub_pd(x_vec_0, points_vec_0);
                 error_1 = _mm256_sub_pd(x_vec_1, points_vec_1);
@@ -406,10 +562,17 @@ void evaluate_surrogate_unroll_8_vec_sqrt_vec( double* x, double* points,  doubl
                     _mm256_add_pd(phi_6 , phi_7)
                 )
             );
+
+            for(; j + 3 < d; j+=4){
+                x_vec_0 = _mm256_loadu_pd((double*)(x + pa_d + j));
+                points_vec_0 = _mm256_loadu_pd((double*)(points + pb_d + j));
+                error_0 = _mm256_sub_pd(x_vec_0, points_vec_0);
+                phi = _mm256_fmadd_pd(error_0, error_0, phi); 
+            }
             phi_half_sum = _mm256_hadd_pd(phi, phi);
             _mm256_store_pd((double*)phi_half, phi_half_sum);
             phi_sum = phi_half[0] + phi_half[2];
-
+            
             phi_res = 0;
             for(; j < d; j++){
                 error = x[pa_d + j] - points[pb_d + j];
@@ -418,25 +581,19 @@ void evaluate_surrogate_unroll_8_vec_sqrt_vec( double* x, double* points,  doubl
             phi_sum += phi_res;
             history_phi[pb] = phi_sum;
         }
-        
-        // for(int pb = 0; pb < N_points; pb++){
-        //     phi_sum = history_phi[pb];
-        //     sq_phi = sqrt(phi_sum);              // flops: 1
-        //     phi_sum = phi_sum * sq_phi;                     // flops: 2
-        //     res += phi_sum * lambda_c[pb];               // flops: 2
-        // }
+
         res_vec = _mm256_set1_pd(0);
         int pb;
         for(pb = 0; pb + 3 < N_points; pb+=4){
-            phi = _mm256_loadu_pd((double*)(history_phi + pb));
-            lambda_c_vec = _mm256_loadu_pd((double*)(lambda_c + pb));
+            phi = _mm256_load_pd((double*)(history_phi + pb));
+            lambda_c_vec = _mm256_load_pd((double*)(lambda_c + pb));
             sq_phi_vec = _mm256_sqrt_pd(phi);
             phi = _mm256_mul_pd(phi, sq_phi_vec);
             res_vec = _mm256_fmadd_pd(phi, lambda_c_vec, res_vec);
             
         }
         res_vec = _mm256_hadd_pd(res_vec, res_vec);
-        _mm256_storeu_pd(res_half,res_vec);
+        _mm256_store_pd(res_half,res_vec);
         res += res_half[0]+res_half[2];
 
         for(;pb<N_points;pb++){
@@ -445,8 +602,6 @@ void evaluate_surrogate_unroll_8_vec_sqrt_vec( double* x, double* points,  doubl
             phi_sum = phi_sum * sq_phi;                     // flops: 2
             res += phi_sum * lambda_c[pb];               // flops: 2
         }
-        
-
         // flops: 2d
         for(int i = 0; i < d; i++){
             res += x[pa_d + i] * lambda_c[N_points + i];
@@ -470,7 +625,8 @@ void test_eval1(){
     myInt64 gt_start,cur_start,gt_time, cur_time,
             cur_time8,
             cur_time8_sqrt,
-            cur_time8_sqrt_vec;
+            cur_time8_sqrt_vec,
+            cur_time8_sqrt_sample_vec;
     int N_points = 154, N_x = 154;
     int d = 41;
     int repeat = 10000;
@@ -557,15 +713,15 @@ void test_eval1(){
 
 void test_gt(){
     srand(time(NULL));
-    myInt64 gt_start, gt_time, vec_start, vec_time, start8,time8, vec_vec_time;
+    myInt64 gt_start, gt_time, vec_start, vec_time, start8,time8, vec_vec_time, sample_vec_time;
 
     int N_points = 154, N_x = 154;
-    int d = 320;
+    int d = 43;
     int repeat = 1000;
     int warmup_iter = 100;
     double* x = (double*)malloc(N_x * d * sizeof(double));
     double* points = (double*)malloc(N_points * d * sizeof(double));
-    double* lambda_c = (double*)malloc((N_points + d + 1)*sizeof(double));
+    double* lambda_c = (double*)aligned_alloc(32,(N_points + d + 1)*sizeof(double));
     generate_random(x, N_x * d);
     generate_random(points, N_points * d);
     generate_random(lambda_c, N_points + d + 1);
@@ -575,10 +731,25 @@ void test_gt(){
     double* groundtruth = (double*)malloc(N_x * sizeof(double));
     double* result8_sqrt_vec = (double*)malloc(N_x * sizeof(double));
     evaluate_surrogate_gt( x, points,  lambda_c, N_x, N_points, d, groundtruth);
-    cout << "groundtruth: "<<groundtruth[0]<<endl; 
-    evaluate_surrogate_unroll_8_vec_sqrt_vec( x, points,  lambda_c, N_x, N_points, d, result8_sqrt_vec);
-    cout << "result of unroll_8_vec_sqrt_vec: "<<result8_sqrt_vec[0]<<endl; 
-
+    // cout << "groundtruth: ";
+    // for(int i = 0; i < N_x; i++){
+    //     cout << groundtruth[i] << " ";
+    // }
+    // cout << endl;
+    evaluate_surrogate_unroll_8_sqrt_sample_vec( x, points,  lambda_c, N_x, N_points, d, result8_sqrt_vec);
+    // cout << "result of unroll_8_vec_sqrt_vec: ";
+    // for(int i = 0; i < N_x; i++){
+    //     cout << result8_sqrt_vec[i] << " ";
+    // }
+    // cout << endl;
+    for(int i = 0; i < N_x; i++){
+        if(abs(result8_sqrt_vec[i] - groundtruth[i]) > 1e-5){
+            cout << "wrong at " << i << endl;
+            cout << result8_sqrt_vec[i] << " " << groundtruth[i] << endl;
+            exit(0);
+        }
+    }
+    cout << "correct\n";
     //------------------------
     // test for vec
     //------------------------
@@ -601,6 +772,15 @@ void test_gt(){
         evaluate_surrogate_unroll_8_vec_sqrt_vec( x, points,  lambda_c, N_x, N_points, d, groundtruth);
     }
     vec_vec_time = stop_tsc(vec_start);
+
+    for(int i = 0; i < warmup_iter; i++){
+        evaluate_surrogate_unroll_8_sqrt_sample_vec( x, points,  lambda_c, N_x, N_points, d, groundtruth);
+    }
+    vec_start = start_tsc();
+    for(int i = 0; i < repeat; i++){
+        evaluate_surrogate_unroll_8_sqrt_sample_vec( x, points,  lambda_c, N_x, N_points, d, groundtruth);
+    }
+    sample_vec_time = stop_tsc(vec_start);
 
     //------------------------
     // test for ground truth
@@ -629,9 +809,10 @@ void test_gt(){
 
     cout << "Compare running time: -----------" << endl;
     cout << "groundtruth cycles: "<< gt_time/(double)repeat << endl;
-    cout << "current cycles of unrolling-8-sqrt: "<< time8/(double)repeat << " and performance improve is: " <<   ((gt_time/(double)repeat)-(time8/(double)repeat)) / (gt_time/(double)repeat) << endl;
-    cout << "current cycles of unrolling-8-sqrt-vec: "<< vec_time/(double)repeat << " and performance improve is: " <<   ((gt_time/(double)repeat)-(vec_time/(double)repeat)) / (gt_time/(double)repeat) << endl;
-    cout << "current cycles of unrolling-8-vec-sqrt-vec: "<< vec_vec_time/(double)repeat << " and performance improve is: " <<   ((gt_time/(double)repeat)-(vec_vec_time/(double)repeat)) / (gt_time/(double)repeat) << endl;
+    cout << "current cycles of unrolling-8-sqrt: "<< time8/(double)repeat << " and performance improve is: " <<   ((gt_time/(double)repeat)) / (time8/(double)repeat) << endl;
+    cout << "current cycles of unrolling-8-sqrt-vec: "<< vec_time/(double)repeat << " and performance improve is: " <<   ((gt_time/(double)repeat) / (vec_time/(double)repeat)) << endl;
+    cout << "current cycles of unrolling-8-vec-sqrt-vec: "<< vec_vec_time/(double)repeat << " and performance improve is: " <<   ((gt_time/(double)repeat)/(vec_vec_time/(double)repeat))  << endl;
+    cout << "current cycles of unrolling-8-vec-sqrt-sample-vec: "<< sample_vec_time/(double)repeat << " and performance improve is: " <<   ((gt_time/(double)repeat)/(sample_vec_time/(double)repeat))  << endl;
 
 }
 
