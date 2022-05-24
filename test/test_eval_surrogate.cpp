@@ -816,6 +816,42 @@ void test_gt(){
 
 }
 
+
+double test_function(void (*eval)(double* x, double* points,  double* lambda_c, int N_x, int N_points, int d, double* output), 
+                   int N_points, int N_x, int d, int repeat, int warmup){
+    srand(time(NULL));
+    myInt64 start,time;
+    double* x = (double*)malloc(N_x * d * sizeof(double));
+    double* points = (double*)malloc(N_points * d * sizeof(double));
+    double* lambda_c = (double*)aligned_alloc(32,(N_points + d + 1)*sizeof(double));
+    double* result = (double*)malloc(N_x * sizeof(double));
+
+    generate_random(x, N_x * d);
+    generate_random(points, N_points * d);
+    generate_random(lambda_c, N_points + d + 1);
+
+    eval( x, points,  lambda_c, N_x, N_points, d, result);
+
+    for(int i = 0; i < warmup; i++){
+        eval( x, points,  lambda_c, N_x, N_points, d, result);
+    }
+
+    start = start_tsc();
+    for(int i = 0; i < repeat; i++){
+        eval( x, points,  lambda_c, N_x, N_points, d, result);
+    }
+    time = stop_tsc(start);
+
+    free(x);
+    free(points);
+    free(lambda_c);
+    free(result);
+
+    return time / (double)repeat;
+}
+
 int main(){
-    test_gt();
+    // test_gt();
+    double time = test_function(evaluate_surrogate_unroll_8_sqrt_sample_vec,154,154,43,1000,100);
+    cout << time << endl;
 }
