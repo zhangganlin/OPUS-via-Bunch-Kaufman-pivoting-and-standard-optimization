@@ -29,17 +29,26 @@ set(TEST_SURROGATE_SOURCES
     src/randomlhs.cpp
     src/surrogate.cpp
     src/LinearSolver.cpp
+    src/test_utils.cpp
 )
 
 set(TEST_LINEARSOLVER_SOURCES
     test/test_LinearSolver.cpp
     src/LinearSolver.cpp
+    src/test_utils.cpp
 )
 
 set(TEST_EVAL_SURR_SOURCES
     test/test_eval_surrogate.cpp
     src/LinearSolver.cpp
     src/surrogate.cpp
+    src/test_utils.cpp
+)
+
+set(TEST_BLOCK_BK_SOURCES
+    test/test_blockbk.cpp
+    src/blockbk.cpp
+    src/test_utils.cpp
 )
 
 include_directories(
@@ -50,6 +59,7 @@ add_executable(demo ${SOURCES})
 add_executable(test_surrogate ${TEST_SURROGATE_SOURCES})
 add_executable(test_linearsolver ${TEST_LINEARSOLVER_SOURCES})
 add_executable(test_eval_surr ${TEST_EVAL_SURR_SOURCES})
+add_executable(test_block_bk ${TEST_BLOCK_BK_SOURCES})
 
 target_include_directories(demo
     PRIVATE
@@ -73,6 +83,11 @@ target_include_directories(test_eval_surr
     ${PROJECT_SOURCE_DIR}/include
 )
 
+target_include_directories(test_block_bk
+    PRIVATE
+    ${PROJECT_SOURCE_DIR}/include
+)
+
 target_link_libraries (demo 
     PRIVATE
     Eigen3::Eigen 
@@ -92,6 +107,12 @@ target_link_libraries (test_linearsolver
 )
 
 target_link_libraries (test_eval_surr
+    PRIVATE
+    Eigen3::Eigen
+    ${CERES_LIBRARIES}
+)
+
+target_link_libraries (test_block_bk
     PRIVATE
     Eigen3::Eigen
     ${CERES_LIBRARIES}

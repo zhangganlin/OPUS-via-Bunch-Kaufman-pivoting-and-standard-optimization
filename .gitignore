@@ -11,3 +11,5 @@ Matrix.txt
 test_eval.txt
 size*.txt
 roofline*
+*.cfg
+evaluate_surrogate_gt.txt
