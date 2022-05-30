@@ -125,3 +125,15 @@ void print_vector(int* b, int n){
     }
     cout << endl;
 }
+
+bool compare_matrix(double* A1, double* A2, int m, int n){
+	double threshold = 1e-5;
+	for(int i = 0; i < m; i++){
+		for(int j = 0; j < n; j++){
+			if (abs(A1[i*n+j]-A2[i*n+j])>threshold){
+				return false;
+			}
+		}
+	}
+	return true;
+}

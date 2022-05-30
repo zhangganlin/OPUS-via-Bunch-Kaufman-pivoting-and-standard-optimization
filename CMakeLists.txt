@@ -51,6 +51,12 @@ set(TEST_BLOCK_BK_SOURCES
     src/test_utils.cpp
 )
 
+
+set(TEST_MATRIX_UPDATE_SOURCES
+    test/test_matrix_update.cpp
+    src/test_utils.cpp
+)
+
 include_directories(
     ${CERES_INCLUDE_DIR}
 )
@@ -60,6 +66,7 @@ add_executable(test_surrogate ${TEST_SURROGATE_SOURCES})
 add_executable(test_linearsolver ${TEST_LINEARSOLVER_SOURCES})
 add_executable(test_eval_surr ${TEST_EVAL_SURR_SOURCES})
 add_executable(test_block_bk ${TEST_BLOCK_BK_SOURCES})
+add_executable(test_matrix_update ${TEST_MATRIX_UPDATE_SOURCES})
 
 target_include_directories(demo
     PRIVATE
@@ -87,6 +94,13 @@ target_include_directories(test_block_bk
     PRIVATE
     ${PROJECT_SOURCE_DIR}/include
 )
+
+target_include_directories(test_matrix_update
+    PRIVATE
+    ${PROJECT_SOURCE_DIR}/include
+)
+
+
 
 target_link_libraries (demo 
     PRIVATE

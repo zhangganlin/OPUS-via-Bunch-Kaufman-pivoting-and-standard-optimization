@@ -40,4 +40,5 @@ void print_matrix(double* A, int m, int n, int precision);
 
 void print_vector(int* b, int n);
 
+bool compare_matrix(double* A1, double* A2, int m, int n);
 #endif

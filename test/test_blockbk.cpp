@@ -1,68 +1,9 @@
 #include "test_utils.h"
 #include <iostream>
 #include "blockbk.h"
+#include "tsc_x86.h"
 
 using namespace std;
-
-void test_matrix_update(){
-    double* A = (double*)malloc(5*5*sizeof(double));
-    double* L = (double*)malloc(5*5*sizeof(double));
-    double* D = (double*)malloc(5*5*sizeof(double));
-    double* A11 = (double*)malloc(2*2*sizeof(double));
-    double* A21 = (double*)malloc(1*2*sizeof(double));
-    double* A22 = (double*)malloc(1*1*sizeof(double));
-    double* L10 = (double*)malloc(2*2*sizeof(double));
-    double* L20 = (double*)malloc(1*2*sizeof(double));
-    double* L10T = (double*)malloc(2*2*sizeof(double));
-    double* L20T = (double*)malloc(1*2*sizeof(double));
-    int* pivot = (int*)malloc(1*5*sizeof(int)); //useless
-    int n = 5;
-    int k = 2;
-    int r = 2;
-
-    generate_random_dense(A, 5, 5);
-    matrix_get_block(A,2,2,2,2,A11,n);
-    matrix_get_block(A,4,2,1,2,A21,n);
-    matrix_get_block(A,4,4,1,1,A22,n);
-
-    pivot[0] = 2;
-    pivot[1] = 0;
-    pivot[2] = 1;
-    pivot[3] = 1;
-    pivot[4] = 1;
-    generate_random_d(D, 5, pivot);
-    generate_random_l(L, 5);
-
-    matrix_get_block(L,2,0,2,2,L10,n);
-    matrix_get_block(L,4,0,1,2,L20,n);
-    matrix_transpose(L10,L10T,2);
-    matrix_transpose(L20,L20T,1,2);
-
-    cout << "matrix A to be updated: " << endl;
-    print_matrix(A, 5, 5, 4);    
-
-    cout << "L:" << endl;
-    print_matrix(L,5,5,4);
-
-
-    matrix_update(A, D, L, pivot, n, k, r);
-
-    cout << "lower matrix is: " << endl;
-    print_matrix(L, 5, 5, 4);
-
-    cout << "updated matrix A' is: " << endl;
-    print_matrix(A, 5, 5, 4);    
-    // print_matrix(a, 2, 2, 4);
-
-    cout << "diag matrix D is: " << endl;
-    print_matrix(D, 5, 5, 4);
-
-    free (A); free(A11); free(A21); free(A22);
-    free (L);
-    free (D);
-    free (pivot);
-    free(L10);free(L10T);free(L20);free(L20T);
-}
 
 void test_BunchKaufman_subblock(){
     int n = 15;
@@ -77,6 +18,7 @@ void test_BunchKaufman_subblock(){
     double* L = (double*)malloc(n*n*sizeof(double));
     int* P = (int*)malloc(n*sizeof(int));
     int* pivot = (int*)malloc(n*sizeof(int));
+    int* pivot2 = (int*)malloc(b_size*sizeof(int));
 
     generate_random_symmetry(A_block,b_size);
 
@@ -88,7 +30,7 @@ void test_BunchKaufman_subblock(){
     print_matrix(A,n,n,4);
 
     BunchKaufman_noblock(A_block,L_block,P_block,pivot_block,b_size);
-    BunchKaufman_subblock(A,L,P,pivot,n,12,bigger_b_size);
+    BunchKaufman_subblock(A,L,P,pivot,pivot2,n,12,bigger_b_size);
 
     cout << "L_block:\n";
     print_matrix(L_block,b_size,b_size,4);
@@ -136,7 +78,7 @@ void test_permute(){
 
 void test_BunchKaufman_block(){
     int n = 15;
-    int b_size = 5;
+    int b_size = 4;
     double* A = (double*)malloc(n*n*sizeof(double));
     double* a = (double*)malloc(b_size*b_size*sizeof(double));
 
@@ -174,9 +116,55 @@ void test_BunchKaufman_block(){
 
 }
 
+void compare_speed(int n, int b_size, int repeat){
+    srand(time(NULL));
+    myInt64 start, gt_time, block_time;
+    gt_time = block_time = 0;
+    double* A = (double*)malloc(n*n*sizeof(double));
+    double* A1 = (double*)malloc(n*n*sizeof(double));
+    double* A2 = (double*)malloc(n*n*sizeof(double));
+    double* L = (double*)malloc(n*n*sizeof(double));
+    int* P = (int*)malloc(n*sizeof(int));
+    int* pivot = (int*)malloc(n*sizeof(int));   
+    int* pivot_idx = (int*)malloc(n*sizeof(int));       
+
+    generate_random_symmetry(A,n);
+
+    for(int i = 0; i < repeat; i++){
+        
+        matrix_transpose(A,A1,n);
+        matrix_transpose(A,A2,n);
+
+        start = start_tsc();
+        BunchKaufman_noblock(A1,L,P,pivot,n);
+        gt_time += stop_tsc(start);
+
+        start = start_tsc();
+        BunchKaufman_block(A2,L,P,pivot,n,b_size);
+        block_time += stop_tsc(start);   
+    }
+    
+ 
+
+    cout << "block size: " << b_size << endl;
+    cout << "gt_time: " << (double)gt_time/(double)repeat << endl;
+    cout << "block_time: "<<(double)block_time/(double)repeat << endl;
+    cout << "speedup: " << (double)gt_time/(double)block_time << endl;
+    cout << endl;
+
+    free(A);
+    free(A1);free(A2);free(L);free(P),free(pivot);
+}
+
 int main(){
     // test_BunchKaufman_subblock();
     // test_permute();
-    test_BunchKaufman_block();
+    // test_BunchKaufman_block();
+    int n = 3000;
+    int repeat = 1;
+    for(int b_size = 45; b_size < 65; b_size += 1){
+        compare_speed(n,b_size,repeat);
+    }
+
     return 0;
 }
