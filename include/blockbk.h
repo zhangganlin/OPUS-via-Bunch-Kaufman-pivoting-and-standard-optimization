@@ -11,8 +11,6 @@ using namespace std;
 
 void permute(double* A, int* P, int b_row_start, int b_row_end, int b_col_start, int b_col_end, int n, int dim);
 
-void BunchKaufman_noblock(double* A, double* L, int* P, int* pivot, int M);
-
 void BunchKaufman_subblock(double* A, double* L, int* P, int* pivot, int* pivot_idx, int M, int b_start, int b_size);
 
 void BunchKaufman_block(double* A, double* L, int* P, int* pivot, int n, int r);

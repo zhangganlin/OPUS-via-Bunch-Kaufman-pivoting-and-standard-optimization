@@ -10,6 +10,7 @@
 #include "surrogate.hpp"
 #include "randomlhs.hpp"
 #include "tsc_x86.h"
+#include "test_utils.h"
 
 #include <ceres/ceres.h>
 #include <glog/logging.h>
@@ -49,112 +50,6 @@ struct CostFunctor {
     }
 };
 
-typedef struct{
-    // for cycle testing result storage
-    myInt64 step1to4;
-    std::vector<myInt64> step5_time;
-    std::vector<int> step5_x_history_size;
-    std::vector<myInt64> step6a;
-    std::vector<myInt64> step6b;
-    std::vector<myInt64> step7;
-    std::vector<myInt64> step8;
-    std::vector<myInt64> step9_time;
-    std::vector<int> step9_x_history_size;
-    std::vector<myInt64> step10;
-    std::vector<myInt64> step11;
-}cycle_stastic_t;
-
-void cycle_stastic_init(cycle_stastic_t& obj){
-    obj.step1to4 = 0;
-    obj.step5_time.clear();
-    obj.step5_x_history_size.clear();
-    obj.step6a.clear();
-    obj.step6b.clear();
-    obj.step7.clear();
-    obj.step8.clear();
-    obj.step9_time.clear();
-    obj.step9_x_history_size.clear();
-    obj.step10.clear();
-    obj.step11.clear();
-}
-
-void print_cycle_stastic(cycle_stastic_t& obj, opus_settings_t *settings){
-    std::cout << "parameters:" << std::endl;
-    std::cout << "  dim: " << settings->dim << std::endl;
-    std::cout << "  range_lo: " << settings->range_lo[0] << std::endl;
-    std::cout << "  range_hi: " << settings->range_hi[0] << std::endl;
-    std::cout << "  swarm_size: " << settings->size << std::endl;
-    std::cout << "  k_size: " << settings->k_size << std::endl;
-    std::cout << "  opt_goal: " << settings->goal << std::endl;
-    std::cout << "  num_trial: " << settings->r << std::endl;
-    std::cout << "  side_len: " << settings->side_len << std::endl;
-
-    std::cout << "step1to4: " << obj.step1to4 << std::endl;
-    
-    std::cout << "step5_time: [";
-    for(int i =0; i < obj.step5_time.size()-1; i++){
-        std::cout << obj.step5_time[i] << ",";
-    }
-    std::cout << obj.step5_time[obj.step5_time.size()-1] << "]" << std::endl;
-
-    std::cout << "step5_x_history_size: [";
-    for(int i =0; i < obj.step5_x_history_size.size()-1; i++){
-        std::cout << obj.step5_x_history_size[i] << ",";
-    }
-    std::cout << obj.step5_x_history_size[obj.step5_x_history_size.size()-1] << "]" << std::endl;
-
-    std::cout << "step6a: [";
-    for(int i =0; i < obj.step6a.size()-1; i++){
-        std::cout << obj.step6a[i] << ",";
-    }
-    std::cout << obj.step6a[obj.step6a.size()-1] << "]" << std::endl;
-
-    std::cout << "step6b: [";
-    for(int i =0; i < obj.step6b.size()-1; i++){
-        std::cout << obj.step6b[i] << ",";
-    }
-    std::cout << obj.step6b[obj.step6b.size()-1] << "]" << std::endl;
-
-
-    std::cout << "step7: [";
-    for(int i =0; i < obj.step7.size()-1; i++){
-        std::cout << obj.step7[i] << ",";
-    }
-    std::cout << obj.step7[obj.step7.size()-1] << "]" << std::endl;
-
-    std::cout << "step8: [";
-    for(int i =0; i < obj.step8.size()-1; i++){
-        std::cout << obj.step8[i] << ",";
-    }
-    std::cout << obj.step8[obj.step8.size()-1] << "]" << std::endl;
-
-
-    std::cout << "step9_time: [";
-    for(int i =0; i < obj.step9_time.size()-1; i++){
-        std::cout << obj.step9_time[i] << ",";
-    }
-    std::cout << obj.step9_time[obj.step9_time.size()-1] << "]" << std::endl;
-
-    std::cout << "step9_x_history_size: [";
-    for(int i =0; i < obj.step9_x_history_size.size()-1; i++){
-        std::cout << obj.step9_x_history_size[i] << ",";
-    }
-    std::cout << obj.step9_x_history_size[obj.step9_x_history_size.size()-1] << "]" << std::endl;
-
-
-    std::cout << "step10: [";
-    for(int i =0; i < obj.step10.size()-1; i++){
-        std::cout << obj.step10[i] << ",";
-    }
-    std::cout << obj.step10[obj.step10.size()-1] << "]" << std::endl;
-
-    std::cout << "step11: [";
-    for(int i =0; i < obj.step11.size()-1; i++){
-        std::cout << obj.step11[i] << ",";
-    }
-    std::cout << obj.step11[obj.step11.size()-1] << "]" << std::endl;
-}
-
 // generates a double between (0, 1)
 #define RNG_UNIFORM() (rand()/(double)RAND_MAX)
 
@@ -163,7 +58,6 @@ void print_cycle_stastic(cycle_stastic_t& obj, opus_settings_t *settings){
 
 // function type for the different inertia calculation functions
 typedef double (*inertia_fun_t)(int step, opus_settings_t *settings);
-
 
 
 int fz_compare(const void *a, const void *b){
@@ -256,11 +150,6 @@ double * opus_matrix_extend(int old_size, int dim, double* matrix) {
     return matrix;
 }
 
-// TODO: Change pos_z to 1d
-void opus_matrix_free(double *m) {
-    free(m);
-}
-
 
 //==============================================================
 //                     OPUS ALGORITHM
@@ -269,8 +158,19 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
 	       opus_result_t *solution, opus_settings_t *settings)
 {   
     myInt64 start;
-    cycle_stastic_t cycle_stastic;
+
+    #ifndef FLOP_COUNTER
+    stastic_t cycle_stastic;
     cycle_stastic_init(cycle_stastic);
+    #endif
+
+    #ifdef FLOP_COUNTER
+    stastic_t flop_stastic;
+    cycle_stastic_init(flop_stastic);
+    flops() = 0;
+    #endif
+
+    
 
     google::InitGoogleLogging("opt");
     // Particles
@@ -306,10 +206,11 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     double w = OPUS_INERTIA;
     inertia_fun_t calc_inertia_fun = NULL; // inertia weight update function
 
+
     // initialize random seed
     srand(2);
 
-    // SELECT APPROPRIATE INERTIA WEIGHT UPDATE FUNCTION
+    // // SELECT APPROPRIATE INERTIA WEIGHT UPDATE FUNCTION
     calc_inertia_fun = calc_inertia_lin_dec;
 
     // INITIALIZE SOLUTION
@@ -322,7 +223,9 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     // TODO: Change pos_z to 1d
     randomLHS(settings->k_size,settings->dim,pos_z,*settings->range_lo,*settings->range_hi);
 
+    #ifndef FLOP_COUNTER
     start = start_tsc();
+    #endif
 
     // TODO: Change pos_z to 1d
     for(i=0; i<settings->k_size;i++){
@@ -358,7 +261,9 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
                     sizeof(double) * settings->dim);
         }
     }
+    #ifndef FLOP_COUNTER
     cycle_stastic.step1to4 = stop_tsc(start);
+    #endif
     valid_x_history_size = settings->size;
     this_round_x_history_size = valid_x_history_size;
     //------------------------------------------------------------------------------------------------
@@ -384,22 +289,30 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
         // step 5: fit surrogate--------------------------------------------------------------
         // build_surrogate_eigen(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
         // build_surrogate(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
+        #ifndef FLOP_COUNTER
         start = start_tsc();
+        #endif
             build_surrogate(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
+        
+        #ifndef FLOP_COUNTER
         cycle_stastic.step5_time.push_back(stop_tsc(start));
         cycle_stastic.step5_x_history_size.push_back(valid_x_history_size);
+        #endif
 
         this_round_x_history_size = valid_x_history_size;
         // -----------------------------------------------------------------------------------
-
+        #ifndef FLOP_COUNTER
         cycle_stastic.step6a.push_back(0);
         cycle_stastic.step6b.push_back(0);
         cycle_stastic.step7.push_back(0);
         cycle_stastic.step8.push_back(0);
+        #endif
         // update all particles
         for (i=0; i<settings->size; i++) {       
             // step 6-----------------------------------------------------------------------------
+            #ifndef FLOP_COUNTER
             start = start_tsc();
+            #endif
             // 6a
             for(l=0; l<settings->r; l++){
                 for (d=0; d<settings->dim; d++) {
@@ -422,9 +335,11 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
                     }
                 }
             }
+            #ifndef FLOP_COUNTER
             cycle_stastic.step6a[step] += stop_tsc(start);
 
             start = start_tsc();
+            #endif
             //6b
             //using surrogate model here
             // evaluate_surrogate_batch(temp_pos,x_history,lambda_c,settings->r,this_round_x_history_size,settings->dim,temp_result);
@@ -450,17 +365,26 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             }
             memcpy((void *)(x_history + valid_x_history_size * settings->dim), (void *)(temp_pos + temp_idx * settings->dim),
                         sizeof(double) * settings->dim);
+           
+            #ifndef FLOP_COUNTER
             cycle_stastic.step6b[step] += stop_tsc(start);
+            #endif
             // -----------------------------------------------------------------------------------
 
 
             // step 7-8 ---------------------------------------------------------------------------
             // update particle fitness
+            #ifndef FLOP_COUNTER
             start = start_tsc();
+            #endif
+
             fit[i] = obj_fun(pos + i * settings->dim, settings->dim, obj_fun_params);
-            cycle_stastic.step7[step] += stop_tsc(start);
             
+            #ifndef FLOP_COUNTER
+            cycle_stastic.step7[step] += stop_tsc(start);
             start = start_tsc();
+            #endif
+
             f_history[valid_x_history_size++] = fit[i];
 
             // update personal best position?
@@ -479,19 +403,29 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
                         sizeof(double) * settings->dim);
             }
             // -----------------------------------------------------------------------------------
+            #ifndef FLOP_COUNTER
             cycle_stastic.step8[step] += stop_tsc(start);
+            #endif
         }
 
         // step 9 Refit surrogate-------------------------------------------------------------
         // build_surrogate_eigen(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
+        #ifndef FLOP_COUNTER
         start = start_tsc();
+        #endif
+
         build_surrogate(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
+
+        #ifndef FLOP_COUNTER
         cycle_stastic.step9_time.push_back(stop_tsc(start));
         cycle_stastic.step9_x_history_size.push_back(valid_x_history_size);
+        #endif
         // -----------------------------------------------------------------------------------
 
         // step 10----------------------------------------------------------------------------
+        #ifndef FLOP_COUNTER
         start = start_tsc();
+        #endif
 
         points4opt = x_history;
         lambda_c4opt = lambda_c; 
@@ -524,11 +458,14 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
         Solver::Summary summary;
         Solve(options, &problem, &summary);
 
+        #ifndef FLOP_COUNTER
         cycle_stastic.step10.push_back(stop_tsc(start));
+        
         // -----------------------------------------------------------------------------------
 
         // step 11----------------------------------------------------------------------------
         start = start_tsc();
+        #endif
 
         min_dist = 0;
         for(j = 0; j < valid_x_history_size; j++){
@@ -559,8 +496,9 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             f_history[valid_x_history_size] = f_opt;
             valid_x_history_size ++;
         }
-        
+        #ifndef FLOP_COUNTER
         cycle_stastic.step11.push_back(stop_tsc(start));
+        #endif
         // -----------------------------------------------------------------------------------
 
 
@@ -572,13 +510,13 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
 
     // free resources
     // TODO: Change pos_z to 1d
-    opus_matrix_free(pos_z);
-    opus_matrix_free(pos);
-    opus_matrix_free(vel);
-    opus_matrix_free(pos_b);
-    opus_matrix_free(temp_pos);
-    opus_matrix_free(temp_vel);
-    opus_matrix_free(x_history);
+    free(pos_z);
+    free(pos);
+    free(vel);
+    free(pos_b);
+    free(temp_pos);
+    free(temp_vel);
+    free(x_history);
 
     free(fit_z);
     free(fit);
@@ -588,6 +526,12 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
     free(lambda_c);
     free(f_history);
 
-    print_cycle_stastic(cycle_stastic,settings);
+    #ifndef FLOP_COUNTER
+    print_stastic(cycle_stastic,settings);
+    #endif
+
+    #ifdef FLOP_COUNTER
+    // print_stastic(flop_stastic,settings);
+    #endif
 
 }

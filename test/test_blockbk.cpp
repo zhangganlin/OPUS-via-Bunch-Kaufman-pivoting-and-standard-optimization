@@ -5,58 +5,6 @@
 
 using namespace std;
 
-void test_BunchKaufman_subblock(){
-    int n = 15;
-    int bigger_b_size = 6;
-    int b_size = 3;
-    double* A_block = (double*)malloc(b_size*b_size*sizeof(double));
-    double* L_block = (double*)malloc(b_size*b_size*sizeof(double));
-    int* P_block = (int*)malloc(b_size*sizeof(int));
-    int* pivot_block = (int*)malloc(b_size*sizeof(int));
-
-    double* A = (double*)malloc(n*n*sizeof(double));
-    double* L = (double*)malloc(n*n*sizeof(double));
-    int* P = (int*)malloc(n*sizeof(int));
-    int* pivot = (int*)malloc(n*sizeof(int));
-    int* pivot2 = (int*)malloc(b_size*sizeof(int));
-
-    generate_random_symmetry(A_block,b_size);
-
-    matrix_set_block(A,12,12,b_size,b_size,A_block,n);
-
-    cout << "A_block:\n";
-    print_matrix(A_block,b_size,b_size,4);
-    cout << "A:\n";
-    print_matrix(A,n,n,4);
-
-    BunchKaufman_noblock(A_block,L_block,P_block,pivot_block,b_size);
-    BunchKaufman_subblock(A,L,P,pivot,pivot2,n,12,bigger_b_size);
-
-    cout << "L_block:\n";
-    print_matrix(L_block,b_size,b_size,4);
-    cout << "L:\n";
-    print_matrix(L,n,n,4);
-
-    cout << "B_block:\n";
-    print_matrix(A_block,b_size,b_size,4);
-    cout << "B:\n";
-    print_matrix(A,n,n,4);
-
-    cout << "P_block:\n";
-    print_vector(P_block,b_size);
-    cout << "P:\n";
-    print_vector(P,n);
-
-    cout << "pivot_block:\n";
-    print_vector(pivot_block,b_size);
-    cout << "pivot:\n";
-    print_vector(pivot,n);
-
-
-    free(A_block); free(L_block); free(P_block); free(pivot_block);
-    free(A); free(L); free(P); free(pivot);
-}
-
 void test_permute(){
     int n = 10;
     int pn = 5;
@@ -76,11 +24,9 @@ void test_permute(){
     cout << endl;
 }
 
-void test_BunchKaufman_block(){
-    int n = 15;
-    int b_size = 4;
+void test_BunchKaufman_block(int n, int b_size, int repeat){
+
     double* A = (double*)malloc(n*n*sizeof(double));
-    double* a = (double*)malloc(b_size*b_size*sizeof(double));
 
     double* L = (double*)malloc(n*n*sizeof(double));
     int* P = (int*)malloc(n*sizeof(int));
@@ -88,31 +34,12 @@ void test_BunchKaufman_block(){
 
 
     generate_random_symmetry(A,n);
-    cout << "matrix A:\n";
-    print_matrix(A,n,n,4);
-    cout << endl;
 
-    BunchKaufman_block(A,L,P,pivot,n,b_size);
-
-    cout << "matrix D:\n";
-    print_matrix(A,n,n,4);
-    cout << endl;
-
-    cout << "L:\n";
-    print_matrix(L,n,n,4);
-    cout << endl;
-
-    cout << "P:\n";
-    print_vector(P,n);
-    cout << endl;
-
-    cout << "pivot:\n";
-    print_vector(pivot,n);
-    cout << endl;
-
+    for(int i = 0; i < repeat; i++){
+        BunchKaufman_block(A,L,P,pivot,n,b_size);
+    }
 
     free(A);free(L);free(P),free(pivot);
-    free(a);
 
 }
 
@@ -136,7 +63,7 @@ void compare_speed(int n, int b_size, int repeat){
         matrix_transpose(A,A2,n);
 
         start = start_tsc();
-        BunchKaufman_noblock(A1,L,P,pivot,n);
+        BunchKaufman_subblock(A1,L,P,pivot,pivot_idx,n,0,n);
         gt_time += stop_tsc(start);
 
         start = start_tsc();
@@ -153,7 +80,7 @@ void compare_speed(int n, int b_size, int repeat){
     cout << endl;
 
     free(A);
-    free(A1);free(A2);free(L);free(P),free(pivot);
+    free(A1);free(A2);free(L);free(P),free(pivot); free(pivot_idx);
 }
 
 void find_best_block_size(int n, int repeat, int from, int to, int gap){
@@ -173,7 +100,7 @@ void find_best_block_size(int n, int repeat, int from, int to, int gap){
     for(int i = 0; i < repeat; i++){
         matrix_transpose(A,A1,n);
         start = start_tsc();
-        BunchKaufman_noblock(A1,L,P,pivot,n);
+        BunchKaufman_subblock(A1,L,P,pivot,pivot_idx,n,0,n);
         gt_time += stop_tsc(start);
     }
 
@@ -194,14 +121,15 @@ void find_best_block_size(int n, int repeat, int from, int to, int gap){
 }
 
 int main(){
-    // test_BunchKaufman_subblock();
     // test_permute();
-    // test_BunchKaufman_block();
-    int n = 100;
-    int repeat = 5;
-    int b_size = 8;
+    int n = 1000;
+    int repeat = 10;
+    int b_size = 48;
+
+    test_BunchKaufman_block(n,b_size,repeat);
+
     // for(int b_size = 20; b_size < 200; b_size += 1){
-        compare_speed(n,b_size,repeat);
+        // compare_speed(n,b_size,repeat);
     // }
 
     // find_best_block_size(n,repeat,65,200,1);

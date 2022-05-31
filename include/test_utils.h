@@ -3,10 +3,13 @@
 #ifndef TEST_UTILS_H
 #define TEST_UTILS_H
 
+#define FLOP_COUNTER
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
-
+#include <vector>
+#include "opus.h"
 #include <iomanip>
 
 using namespace std;
@@ -41,4 +44,28 @@ void print_matrix(double* A, int m, int n, int precision);
 void print_vector(int* b, int n);
 
 bool compare_matrix(double* A1, double* A2, int m, int n);
+
+unsigned long long& flops();
+
+
+
+typedef struct{
+    // for cycle testing result storage
+    unsigned long long step1to4;
+    std::vector<unsigned long long> step5_time;
+    std::vector<int> step5_x_history_size;
+    std::vector<unsigned long long> step6a;
+    std::vector<unsigned long long> step6b;
+    std::vector<unsigned long long> step7;
+    std::vector<unsigned long long> step8;
+    std::vector<unsigned long long> step9_time;
+    std::vector<int> step9_x_history_size;
+    std::vector<unsigned long long> step10;
+    std::vector<unsigned long long> step11;
+}stastic_t;
+
+void cycle_stastic_init(stastic_t& obj);
+void print_stastic(stastic_t& obj, opus_settings_t *settings);
+
+
 #endif

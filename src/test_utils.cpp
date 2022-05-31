@@ -1,5 +1,5 @@
 #include "test_utils.h"
-
+#include "tsc_x86.h"
 using namespace std;
 
 void read_matrix(double* A, int m, int n, string path){
@@ -136,4 +136,101 @@ bool compare_matrix(double* A1, double* A2, int m, int n){
 		}
 	}
 	return true;
+}
+
+
+unsigned long long& flops() {
+	static myInt64 flop;
+	return flop;
+}
+
+void cycle_stastic_init(stastic_t& obj){
+    obj.step1to4 = 0;
+    obj.step5_time.clear();
+    obj.step5_x_history_size.clear();
+    obj.step6a.clear();
+    obj.step6b.clear();
+    obj.step7.clear();
+    obj.step8.clear();
+    obj.step9_time.clear();
+    obj.step9_x_history_size.clear();
+    obj.step10.clear();
+    obj.step11.clear();
+}
+
+void print_stastic(stastic_t& obj, opus_settings_t *settings){
+    std::cout << "parameters:" << std::endl;
+    std::cout << "  dim: " << settings->dim << std::endl;
+    std::cout << "  range_lo: " << settings->range_lo[0] << std::endl;
+    std::cout << "  range_hi: " << settings->range_hi[0] << std::endl;
+    std::cout << "  swarm_size: " << settings->size << std::endl;
+    std::cout << "  k_size: " << settings->k_size << std::endl;
+    std::cout << "  opt_goal: " << settings->goal << std::endl;
+    std::cout << "  num_trial: " << settings->r << std::endl;
+    std::cout << "  side_len: " << settings->side_len << std::endl;
+
+    std::cout << "step1to4: " << obj.step1to4 << std::endl;
+    
+    std::cout << "step5_time: [";
+    for(int i =0; i < obj.step5_time.size()-1; i++){
+        std::cout << obj.step5_time[i] << ",";
+    }
+    std::cout << obj.step5_time[obj.step5_time.size()-1] << "]" << std::endl;
+
+    std::cout << "step5_x_history_size: [";
+    for(int i =0; i < obj.step5_x_history_size.size()-1; i++){
+        std::cout << obj.step5_x_history_size[i] << ",";
+    }
+    std::cout << obj.step5_x_history_size[obj.step5_x_history_size.size()-1] << "]" << std::endl;
+
+    std::cout << "step6a: [";
+    for(int i =0; i < obj.step6a.size()-1; i++){
+        std::cout << obj.step6a[i] << ",";
+    }
+    std::cout << obj.step6a[obj.step6a.size()-1] << "]" << std::endl;
+
+    std::cout << "step6b: [";
+    for(int i =0; i < obj.step6b.size()-1; i++){
+        std::cout << obj.step6b[i] << ",";
+    }
+    std::cout << obj.step6b[obj.step6b.size()-1] << "]" << std::endl;
+
+
+    std::cout << "step7: [";
+    for(int i =0; i < obj.step7.size()-1; i++){
+        std::cout << obj.step7[i] << ",";
+    }
+    std::cout << obj.step7[obj.step7.size()-1] << "]" << std::endl;
+
+    std::cout << "step8: [";
+    for(int i =0; i < obj.step8.size()-1; i++){
+        std::cout << obj.step8[i] << ",";
+    }
+    std::cout << obj.step8[obj.step8.size()-1] << "]" << std::endl;
+
+
+    std::cout << "step9_time: [";
+    for(int i =0; i < obj.step9_time.size()-1; i++){
+        std::cout << obj.step9_time[i] << ",";
+    }
+    std::cout << obj.step9_time[obj.step9_time.size()-1] << "]" << std::endl;
+
+    std::cout << "step9_x_history_size: [";
+    for(int i =0; i < obj.step9_x_history_size.size()-1; i++){
+        std::cout << obj.step9_x_history_size[i] << ",";
+    }
+    std::cout << obj.step9_x_history_size[obj.step9_x_history_size.size()-1] << "]" << std::endl;
+
+
+    std::cout << "step10: [";
+    for(int i =0; i < obj.step10.size()-1; i++){
+        std::cout << obj.step10[i] << ",";
+    }
+    std::cout << obj.step10[obj.step10.size()-1] << "]" << std::endl;
+
+    std::cout << "step11: [";
+    for(int i =0; i < obj.step11.size()-1; i++){
+        std::cout << obj.step11[i] << ",";
+    }
+    std::cout << obj.step11[obj.step11.size()-1] << "]" << std::endl;
 }

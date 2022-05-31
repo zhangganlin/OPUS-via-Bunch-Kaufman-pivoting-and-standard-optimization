@@ -252,7 +252,7 @@ void matrix_update_sparse_d_unroll_rename_vec_tail(double* mat_A, double* mat_D,
                     
                     mat_A[s_i_n + j_t] = mat_A[s_i_n + j_t] - d_0;
                 }
-
+                
                 for(j_t = j, t_j_n = j_n; j_t < remaining_col_num_j; t_j_n += n, j_t += 1){
                     d_1  = 0;
 
@@ -297,189 +297,6 @@ void permute(double* A, int* P, int b_row_start, int b_row_end, int b_col_start,
     free(A_temp);
 }
 
-void BunchKaufman_noblock(double* A, double* L, int* P, int* pivot, int M){
-    const double alpha = (1+sqrt(17))/8;
-    int r, i, j, tmp_i;
-    int k = 0;
-    double w1, wr;
-    double tmp_d, A_kk;
-    double detE, invE_11, invE_22, invE_12, invE_21;
-    //Initialize Matrices
-    for (i = 0; i < M; i++) {
-        for (j = 0; j < M; j++){
-            if (j == i) {
-                L[i * M + i] = 1.0;
-            }
-            else{
-                L[i * M + j] = 0.0;
-            }
-        }
-        P[i] = i;
-        pivot[i] = 0.0;
-    }
-    while (k < M-1){
-        w1 = 0.0;
-        for (i = k + 1; i < M; i++){
-            tmp_d = abs(A[i * M + k]);
-            //find the column 1 max magnitude of subdiagonal
-            if (w1 < tmp_d){
-                w1 = tmp_d;
-                r = i;
-            }
-        }
-        if (abs(A[k * M + k]) >= alpha * w1){
-            A_kk = A[k * M + k];
-            for (i = k + 1; i < M; i++)  L[i * M + k] = A[i * M + k] / A_kk;
-            for (i = k + 1; i < M; i++){
-                tmp_d = A[i * M + k];
-                for (j = i; j < M; j++)
-                    A[j * M + i] -=  L[j * M + k] * tmp_d;
-            }
-            
-            for (i = k+1; i < M; i++) A[i * M + k] = 0.0;
-            for (i = k+1; i < M; i++){
-                A[k * M + i] = 0.0;
-            }
-            pivot[k] = 1;
-            k = k + 1;
-        }
-        else{
-            wr = 0.0;
-            //Step 4
-            //max of off-diagonal in row r
-            for (i = k; i < r; i++){
-                tmp_d = abs(A[r * M + i]);
-                if (tmp_d > wr) wr = tmp_d;
-            }
-            // max of off-dinagonal in row r
-            if (r < M){
-                for (i = r + 1; i < M; i++){
-                    tmp_d = abs(A[i * M + r]);
-                //find the column 1 max magnitude of subdiagonal
-                    if (tmp_d > wr) wr = tmp_d;
-                }
-            }
-            if (abs(A[k * M + k]) * wr >= alpha * w1 * w1){
-                A_kk = A[k * M + k];
-                for (i = k + 1; i < M; i++)  L[i * M + k] = A[i * M + k] / A_kk;
-                for (i = k + 1; i < M; i++){
-                    tmp_d = A[i * M + k];
-                    for (j = i; j < M; j++)
-                        A[j * M + i] -=  L[j * M + k] * tmp_d; //##TODO: need to be checked
-                }
-
-                for (i = k+1; i < M; i++) A[i * M + k] = 0.0;
-                for (i = k+1; i < M; i++){
-                     A[k * M + i] = 0.0;
-                }
-                pivot[k] = 1;
-                k = k + 1;
-            } else if (abs(A[r * M + r]) >= alpha * wr){
-                tmp_i = P[k];
-                P[k] = P[r];
-                P[r] = tmp_i;
-                tmp_d = A[k * M + k];
-                A[k * M + k] = A[r * M + r];
-                A[r * M + r] = tmp_d;
-                for (i = r + 1; i < M; i++){
-                    tmp_d = A[i * M + r];
-                    A[i * M + r] = A[i * M + k];
-                    A[i * M + k] = tmp_d;
-                }
-                for (i = k + 1; i < r; i++){
-                    tmp_d = A[i * M + k];
-                    A[i * M + k] = A[r * M + i];
-                    A[r * M + i] = tmp_d;
-                }
-                if (k > 0){
-                    for (j = 0; j < k; j++){
-                        tmp_d = L[k * M + j];
-                        L[k * M + j] = L[r * M + j];
-                        L[r * M + j] = tmp_d;
-                    }
-                }
-                A_kk = A[k * M + k];
-                for (i = k + 1; i < M; i++)  L[i * M + k] = A[i * M + k] / A_kk;
-                for (i = k + 1; i < M; i++){
-                    tmp_d = A[i * M + k];
-                    for (j = i; j < M; j++){
-                        A[j * M + i] -=  L[j * M + k] * tmp_d; //##TODO: need to be checked
-                    }
-                }
-                
-                for (i = k+1; i < M; i++){
-                     A[i * M + k] = 0.0;
-                }
-                for (i = k+1; i < M; i++){
-                     A[k * M + i] = 0.0;
-                }
-                pivot[k] = 1;
-                k = k + 1;
-            } else {
-                tmp_i = P[k+1];
-                P[k+1] = P[r];
-                P[r] = tmp_i;
-                tmp_d = A[(k+1) * M + (k+1)];
-                A[(k+1) * M + (k+1)] = A[r * M + r];
-                A[r * M + r] = tmp_d;
-                for (i = r + 1; i < M; i++){
-                    tmp_d = A[i * M + k+1];
-                    A[i * M + k+1] = A[i * M + r];
-                    A[i * M + r] = tmp_d;
-                }
-                tmp_d = A[(k+1) * M + k];
-                A[(k+1) * M + k] = A[r * M + k];
-                A[r * M + k] = tmp_d;
-                for (i = k+2; i < r; i++){
-                    tmp_d = A[i * M + k+1];
-                    A[i * M + k+1] = A[r * M + i];
-                    A[r * M + i] = tmp_d;
-                }
-                if (k > 0){
-                    for (i = 0; i < k; i++){
-                        tmp_d = L[(k+1) * M + i];
-                        L[(k+1) * M + i] = L[r * M + i];
-                        L[r * M + i] = tmp_d;
-                    }
-                }
-
-                detE = A[k * M + k] * A[(k+1) * M + k+1] - A[(k+1) * M + k] * A[(k+1) * M + k];
-                invE_11 = A[(k+1) * M + k+1] / detE;
-                invE_22 = A[k * M + k] / detE;
-                invE_12 = - A[(k+1) * M + k] / detE;
-                invE_21 = invE_12;
-                for (i = k + 2; i < M; i++){
-                    L[i * M + k] = A[i * M + k] * invE_11 + A[i * M + k+1] * invE_21;
-                    L[i * M + k+1] = A[i * M + k] * invE_12 + A[i * M + k+1] * invE_22;
-                }
-
-                for (j = k+2; j < M; j++){
-                    for(i = j; i < M ; i++){
-                        A[i * M + j] -= L[i * M + k] * A[j * M + k] + L[i * M + k+1] * A[j * M + k+1];
-                    }
-                }
-                for (i = k+2; i < M; i++){
-                    A[i * M + k] = 0.0;
-                    A[i * M + k+1] = 0.0;
-                }
-                for (i = k+2; i < M; i++){
-                     A[k * M + i] = 0.0;
-                     A[(k+1) * M + i] = 0.0;
-                 }
-                pivot[k] = 2;
-                k = k + 2;
-
-                for (i = 0; i < M-1; i++){
-                    A[i*M + i+1] = A[(i+1)*M +i];
-                }
-            }
-        }
-    }
-    if (pivot[M-1] == 0)
-        if(pivot[M-2] != 2)
-            pivot[M-1] = 1;
-}
-
 // we change the permutation to base 0
 void BunchKaufman_subblock(double* A, double* L, int* P, int* pivot, int* pivot_idx, int M, int b_start, int b_size){
     // [b_start, b_end) interval
@@ -491,22 +308,14 @@ void BunchKaufman_subblock(double* A, double* L, int* P, int* pivot, int* pivot_
     int k = b_start;
     double w1, wr;
     double tmp_d, A_kk;
-    double detE, invE_11, invE_22, invE_12, invE_21;
+    double detE, invE_11, invE_22, invE_12, invE_21, inv_Akk, invE;
     int pivot_cnt = 0;
     //Initialize Matrices
     for (i = b_start; i < b_end; i++) {
-        for (j = b_start; j < b_end; j++){
-            if (j == i) {
-                L[i * M + i] = 1.0;
-            }
-            else{
-                L[i * M + j] = 0.0;
-            }
-        }
+        L[i * M + i] = 1.0;
         P[i] = i;
-        pivot[i] = 0.0;
     }
-    while (k < b_end-1){
+    for (; k < b_end-1; ){
         w1 = 0.0;
         for (i = k + 1; i < b_end; i++){
             tmp_d = abs(A[i * M + k]);
@@ -516,19 +325,20 @@ void BunchKaufman_subblock(double* A, double* L, int* P, int* pivot, int* pivot_
                 r = i;
             }
         }
+        inv_Akk = 1.0 / A[k * M + k];
         if (abs(A[k * M + k]) >= alpha * w1){
-            A_kk = A[k * M + k];
-            for (i = k + 1; i < b_end; i++)  L[i * M + k] = A[i * M + k] / A_kk;
+            //A_kk = A[k * M + k];
+            for (i = k + 1; i < b_end; i++)  L[i * M + k] = A[i * M + k] * inv_Akk;
             for (i = k + 1; i < b_end; i++){
                 tmp_d = A[i * M + k];
                 for (j = i; j < b_end; j++)
                     A[j * M + i] -=  L[j * M + k] * tmp_d;
             }
             
-            for (i = k+1; i < b_end; i++) A[i * M + k] = 0.0;
-            for (i = k+1; i < b_end; i++){
-                A[k * M + i] = 0.0;
-            }
+            // for (i = k+1; i < b_end; i++) A[i * M + k] = 0.0;
+            // for (i = k+1; i < b_end; i++){
+            //     A[k * M + i] = 0.0;
+            // }
             pivot[k] = 1;
             k = k + 1;
         }
@@ -549,18 +359,18 @@ void BunchKaufman_subblock(double* A, double* L, int* P, int* pivot, int* pivot_
                 }
             }
             if (abs(A[k * M + k]) * wr >= alpha * w1 * w1){
-                A_kk = A[k * M + k];
-                for (i = k + 1; i < b_end; i++)  L[i * M + k] = A[i * M + k] / A_kk;
+                //A_kk = A[k * M + k];
+                for (i = k + 1; i < b_end; i++)  L[i * M + k] = A[i * M + k] * inv_Akk;
                 for (i = k + 1; i < b_end; i++){
                     tmp_d = A[i * M + k];
                     for (j = i; j < b_end; j++)
                         A[j * M + i] -=  L[j * M + k] * tmp_d; //##TODO: need to be checked
                 }
 
-                for (i = k+1; i < b_end; i++) A[i * M + k] = 0.0;
-                for (i = k+1; i < b_end; i++){
-                     A[k * M + i] = 0.0;
-                }
+                // for (i = k+1; i < b_end; i++) A[i * M + k] = 0.0;
+                // for (i = k+1; i < b_end; i++){
+                //      A[k * M + i] = 0.0;
+                // }
                 pivot[k] = 1;
                 k = k + 1;
             } else if (abs(A[r * M + r]) >= alpha * wr){
@@ -587,8 +397,9 @@ void BunchKaufman_subblock(double* A, double* L, int* P, int* pivot, int* pivot_
                         L[r * M + j] = tmp_d;
                     }
                 }
-                A_kk = A[k * M + k];
-                for (i = k + 1; i < b_end; i++)  L[i * M + k] = A[i * M + k] / A_kk;
+                //A_kk = A[k * M + k];
+                inv_Akk = 1.0 / A[k * M + k];
+                for (i = k + 1; i < b_end; i++)  L[i * M + k] = A[i * M + k] * inv_Akk; /// A_kk;
                 for (i = k + 1; i < b_end; i++){
                     tmp_d = A[i * M + k];
                     for (j = i; j < b_end; j++){
@@ -596,12 +407,12 @@ void BunchKaufman_subblock(double* A, double* L, int* P, int* pivot, int* pivot_
                     }
                 }
                 
-                for (i = k+1; i < b_end; i++){
-                     A[i * M + k] = 0.0;
-                }
-                for (i = k+1; i < b_end; i++){
-                     A[k * M + i] = 0.0;
-                }
+                // for (i = k+1; i < b_end; i++){
+                //      A[i * M + k] = 0.0;
+                // }
+                // for (i = k+1; i < b_end; i++){
+                //      A[k * M + i] = 0.0;
+                // }
                 pivot[k] = 1;
                 k = k + 1;
             } else {
@@ -633,9 +444,10 @@ void BunchKaufman_subblock(double* A, double* L, int* P, int* pivot, int* pivot_
                 }
 
                 detE = A[k * M + k] * A[(k+1) * M + k+1] - A[(k+1) * M + k] * A[(k+1) * M + k];
-                invE_11 = A[(k+1) * M + k+1] / detE;
-                invE_22 = A[k * M + k] / detE;
-                invE_12 = - A[(k+1) * M + k] / detE;
+                invE = 1.0 / detE;
+                invE_11 = A[(k+1) * M + k+1] *invE; // / detE;
+                invE_22 = A[k * M + k] * invE;// / detE;
+                invE_12 = - A[(k+1) * M + k] * invE;// / detE;
                 invE_21 = invE_12;
                 for (i = k + 2; i < b_end; i++){
                     L[i * M + k] = A[i * M + k] * invE_11 + A[i * M + k+1] * invE_21;
@@ -647,14 +459,14 @@ void BunchKaufman_subblock(double* A, double* L, int* P, int* pivot, int* pivot_
                         A[i * M + j] -= L[i * M + k] * A[j * M + k] + L[i * M + k+1] * A[j * M + k+1];
                     }
                 }
-                for (i = k+2; i < b_end; i++){
-                    A[i * M + k] = 0.0;
-                    A[i * M + k+1] = 0.0;
-                }
-                for (i = k+2; i < b_end; i++){
-                     A[k * M + i] = 0.0;
-                     A[(k+1) * M + i] = 0.0;
-                 }
+                // for (i = k+2; i < b_end; i++){
+                //     A[i * M + k] = 0.0;
+                //     A[i * M + k+1] = 0.0;
+                // }
+                // for (i = k+2; i < b_end; i++){
+                //      A[k * M + i] = 0.0;
+                //      A[(k+1) * M + i] = 0.0;
+                //  }
                 pivot[k] = 2;
                 pivot_idx[++pivot_cnt] = k;
                 
@@ -677,7 +489,7 @@ void BunchKaufman_block(double* A, double* L, int* P, int* pivot, int n, int r){
     int* pivot_idx = (int*)malloc((r + 1) * sizeof(int));
 
     if(n <= r){
-        BunchKaufman_noblock(A, L, P, pivot, n);
+        BunchKaufman_subblock(A,L,P,pivot,pivot_idx,n,0,n);
         return;
     }
     int num_block = ceil((double)n / (double)r);
