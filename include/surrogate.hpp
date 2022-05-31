@@ -10,6 +10,7 @@ void build_surrogate(double* points, double* f, int N, int d, double* lambda_c);
 double evaluate_surrogate( double* x,  double* points,  double* lambda_c, int N, int d);
 
 void evaluate_surrogate_batch( double* x, double* points,  double* lambda_c, int N_x, int N_points, int d, double* output);
-void evaluate_surrogate_batch_unroll_8( double* x, double* points,  double* lambda_c, int N_x, int N_points, int d, double* output);
+
+void evaluate_surrogate_unroll_8_sqrt_sample_vec_optimize_load( double* x, double* points,  double* lambda_c, int N_x, int N_points, int d, double* output);
 
 #endif

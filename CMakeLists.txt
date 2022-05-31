@@ -45,7 +45,6 @@ set(TEST_LINEARSOLVER_SOURCES
 set(TEST_EVAL_SURR_SOURCES
     test/test_eval_surrogate.cpp
     src/LinearSolver.cpp
-    src/surrogate.cpp
     src/test_utils.cpp
     src/blockbk.cpp
 )

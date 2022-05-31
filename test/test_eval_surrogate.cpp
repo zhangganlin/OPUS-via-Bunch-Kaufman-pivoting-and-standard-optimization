@@ -1,9 +1,11 @@
-#include "surrogate.hpp"
+#include <iostream>
+#include "LinearSolver.h"
 #include <iostream>
 #include "tsc_x86.h"
 #include "randomlhs.hpp"
 #include <time.h>
 #include <immintrin.h>
+#include <cstring>
 
 using namespace std;
 static double sqrtsd (double x) {

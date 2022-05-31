@@ -427,7 +427,8 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             start = start_tsc();
             //6b
             //using surrogate model here
-            evaluate_surrogate_batch(temp_pos,x_history,lambda_c,settings->r,this_round_x_history_size,settings->dim,temp_result);
+            // evaluate_surrogate_batch(temp_pos,x_history,lambda_c,settings->r,this_round_x_history_size,settings->dim,temp_result);
+            evaluate_surrogate_unroll_8_sqrt_sample_vec_optimize_load(temp_pos,x_history,lambda_c,settings->r,this_round_x_history_size,settings->dim,temp_result);
             temp_idx = 0;
             temp_res_min = temp_result[temp_idx];
             for(l = 0; l < settings->r; l++){
