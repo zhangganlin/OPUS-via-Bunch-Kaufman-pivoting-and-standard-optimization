@@ -271,9 +271,6 @@ void matrix_update_sparse_d_unroll_rename_vec_tail(double* mat_A, double* mat_D,
     }
 }
 
-
-
-
 void permute(double* A, int* P, int b_row_start, int b_row_end, int b_col_start, int b_col_end, int n, int dim){
     // dim = 0 => P * A
     // dim = 1 => A * PT
@@ -317,7 +314,7 @@ void BunchKaufman_noblock(double* A, double* L, int* P, int* pivot, int M){
                 L[i * M + j] = 0.0;
             }
         }
-        P[i] = i+1;
+        P[i] = i;
         pivot[i] = 0.0;
     }
     while (k < M-1){
@@ -678,6 +675,7 @@ void BunchKaufman_subblock(double* A, double* L, int* P, int* pivot, int* pivot_
 /* output is L,A,P,pivot, D will be saved in A*/
 void BunchKaufman_block(double* A, double* L, int* P, int* pivot, int n, int r){
     int* pivot_idx = (int*)malloc((r + 1) * sizeof(int));
+
     if(n <= r){
         BunchKaufman_noblock(A, L, P, pivot, n);
         return;
@@ -689,7 +687,7 @@ void BunchKaufman_block(double* A, double* L, int* P, int* pivot, int n, int r){
     block_solve_column(A, L, A, 0, r, n, pivot);
     
     for(int b_start = r; b_start < n; b_start += r){
-        // matrix_update(A, A, L, pivot, n, b_start, r);
+        // matrix_update_gt(A, A, L, pivot, n, b_start, r);
         matrix_update_sparse_d_unroll_rename_vec_tail(A, A, L, pivot_idx, n, b_start, r);
 
         BunchKaufman_subblock(A, L, P, pivot, pivot_idx, n, b_start, r);
@@ -699,7 +697,3 @@ void BunchKaufman_block(double* A, double* L, int* P, int* pivot, int n, int r){
     }
     free(pivot_idx);
 }
-
-
-
-

@@ -1,98 +1,6 @@
 #include "LinearSolver.h"
+#include "blockbk.h"
 #include <stdio.h>
-
-// With references to Numerical Recipes
-void LUdecomp(double* A, double* b, double* sol, int N, int func_dim){
-    // N is the number of particles, function_dim is d in the paper
-    int i, imax_idx, j, k;
-    double imax, tmp;
-    double* vv = (double*)malloc((N + func_dim + 1) * sizeof(double));
-    int* permute = (int*)malloc((N + func_dim + 1) * sizeof(int));
-    double d = 1.0;
-
-    int n = N + d + 1;
-    //for (i = 0; i < size; i++) {
-    //    A_tmp[i] = (double *)malloc((N + d + 1) * sizeof(double));
-    //}
-    //double* A_tmp = (double*)malloc((N + d + 1)*(N + d + 1)*sizeof(double));
-    for (i = 0; i < n; i++){
-        imax = 0.0;
-        for (j = 0; j < n; j++){
-            tmp = abs(A[i* n + j]);
-            if (tmp > imax){
-                imax = tmp;
-            }
-        }
-        vv[i] = 1.0 / imax;
-    }
-    
-    // for (i = 0; i < 4; i++)
-    //     for (j = 0; j < 4; j++)
-    //         printf("%f ", A[i*n + j]);
-
-    for (k = 0; k < n; k++){
-        imax = 0;
-        imax_idx = k;
-        for (i = k; i < n; i++){
-            tmp = vv[i] * abs(A[i * n + k]);
-            if (tmp > k) {
-                imax = tmp;
-                imax_idx = i;
-            }
-        }
-        if (k != imax_idx) {
-            for (j = 0; j < n; j++){
-                tmp = A[imax_idx * n + j];
-                A[imax_idx * n + j] = A[k * n + j];
-                A[k * n + j] = tmp;
-            }
-            d = -d;
-            vv[imax_idx] = vv[k];
-        }
-        permute[k] = imax_idx;
-        for (i = k + 1; i < n; i++){
-            tmp = A[i * n + k] /A[k * n + k];
-            A[i * n + k] /= A[k * n + k];
-            for (j = k + 1; j < n; j ++){
-                A[i * n + j] -= tmp * A[k * n + j];
-            }
-        }
-    }
-
-
-    ///////////////Solve///////////////
-    double sum;
-    int ip;
-    int ii = 0;
-    for (i = 0; i < n; i++)
-        sol[i] = b[i];
-
-    for(i = 0; i < n; i++){
-        ip = permute[i];
-        sum = sol[ip];
-        sol[ip] = sol[i];
-        if (ii != 0){
-            for (j = ii-1; j < i; j++)
-                sum -= A[i * n + j] * sol[j];
-        } else if (sum != 0.0)
-            ii = i + 1;
-        sol[i] = sum;
-    }
-
-    for (i = n - 1; i >= 0; i--){
-        sum = sol[i];
-        for (j=i+1; j<n; j++) 
-            sum -= A[i * n + j]*sol[j];
-        if(A[i * n + i] == 0){
-            printf("divide by zero in Linear Solver\n");
-        }
-        sol[i]=sum/A[i * n + i];
-    }
-
-    free(vv);
-    free(permute);
-
-}
 
 // This implementation refers to
 void BunchKaufman(double* A, double* L, int* P, int* pivot, int M){
@@ -352,16 +260,21 @@ void solve_BunchKaufman(double* A, double* x, double* b, int n){
     int* P = (int*)malloc(n*sizeof(int));
     int* pivot = (int*)malloc(n*sizeof(int));
 
-    BunchKaufman(A,L,P,pivot,n);  // Assume P start from 0
-    
+    // BunchKaufman(A,L,P,pivot,n);  // Assume P start from 0
+    BunchKaufman_block(A,L,P,pivot,n,BLOCK_SIZE);
+    // BunchKaufman_block(A,L,P,pivot,n,15);
+
+    // BunchKaufman_noblock(A,L,P,pivot,n);
+    // BunchKaufman(A,L,P,pivot,n);
     for(int i = 0; i < n; i++){
-        Pb[i] = b[P[i]-1];
+        Pb[i] = b[P[i]];
     }
     solve_lower(L,DLTPx,Pb,n);
     solve_diag(A,pivot,LTPx,DLTPx,n); //Assume D is saved in A
     solve_upper(L,Px,LTPx,n);
+
     for(int i = 0; i < n; i++){
-        x[P[i]-1] = Px[i];
+        x[P[i]] = Px[i];
     }
 
     free(L);

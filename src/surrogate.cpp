@@ -54,15 +54,6 @@ void build_surrogate(double* points, double* f, int N, int d, double* lambda_c){
     // for(int i = 0; i < N; i++) b[i] = f[i];
     memcpy((void *)b, (void *)f, sizeof(double) * N);
     
-    // if(N==154){
-    //     cout << "size: " << N+d+1<<endl;
-    //     for(int i =0; i < N+d+1; i ++){
-    //         cout << b[i] << " ";
-    //     }
-    //     cout << endl;
-    //     cout << endl;
-    // }
-
     solve_BunchKaufman(A,lambda_c,b,N+d+1);
 
     free(A);

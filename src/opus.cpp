@@ -427,16 +427,7 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             start = start_tsc();
             //6b
             //using surrogate model here
-            int num_runs = 1;//(1 << 10);
-            myInt64 start, cycles;
-            start = start_tsc();
-            for(int t = 0; t < num_runs; t++){
-
-                evaluate_surrogate_batch(temp_pos,x_history,lambda_c,settings->r,this_round_x_history_size,settings->dim,temp_result);
-
-            }
-            cycles = stop_tsc(start) / num_runs;
-
+            evaluate_surrogate_batch(temp_pos,x_history,lambda_c,settings->r,this_round_x_history_size,settings->dim,temp_result);
             temp_idx = 0;
             temp_res_min = temp_result[temp_idx];
             for(l = 0; l < settings->r; l++){

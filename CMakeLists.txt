@@ -21,6 +21,8 @@ set(SOURCES
     src/randomlhs.cpp
     src/surrogate.cpp
     src/LinearSolver.cpp
+    src/blockbk.cpp
+    src/test_utils.cpp
 )
 
 set(TEST_SURROGATE_SOURCES
@@ -29,6 +31,7 @@ set(TEST_SURROGATE_SOURCES
     src/randomlhs.cpp
     src/surrogate.cpp
     src/LinearSolver.cpp
+    src/blockbk.cpp
     src/test_utils.cpp
 )
 
@@ -36,6 +39,7 @@ set(TEST_LINEARSOLVER_SOURCES
     test/test_LinearSolver.cpp
     src/LinearSolver.cpp
     src/test_utils.cpp
+    src/blockbk.cpp
 )
 
 set(TEST_EVAL_SURR_SOURCES
@@ -43,6 +47,7 @@ set(TEST_EVAL_SURR_SOURCES
     src/LinearSolver.cpp
     src/surrogate.cpp
     src/test_utils.cpp
+    src/blockbk.cpp
 )
 
 set(TEST_BLOCK_BK_SOURCES

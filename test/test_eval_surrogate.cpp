@@ -897,8 +897,8 @@ void test_gt(){
     srand(time(NULL));
     myInt64 gt_start, gt_time, vec_start, vec_time, start8,time8, vec_vec_time, sample_vec_time, sample_vec_optimize_load_time;
 
-    int N_points = 154, N_x = 154;
-    int d = 327;
+    int N_points = 1000, N_x = 154;
+    int d = 4;
     int repeat = 1000;
     int warmup_iter = 100;
     double* x = (double*)malloc(N_x * d * sizeof(double));

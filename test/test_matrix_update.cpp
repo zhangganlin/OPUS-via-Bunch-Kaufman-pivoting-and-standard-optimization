@@ -539,7 +539,6 @@ double test_function(void (*matrix_update)(double* mat_A, double* mat_D, double*
     bool correct = true;
     double speed_up = 0;
 
-    srand(time(NULL));
     myInt64 start, gt_time, block_time;
     gt_time = block_time = 0;
 
@@ -608,8 +607,8 @@ double test_function(void (*matrix_update)(double* mat_A, double* mat_D, double*
 }
 
 int main(){
-    int n = 3000; 
-    int block_size = 53;
+    int n = 300; 
+    int block_size = 9;
     int repeat = 1;
     double speed_up = 0;
 

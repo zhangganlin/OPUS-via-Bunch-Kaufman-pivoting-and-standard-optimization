@@ -213,41 +213,6 @@ void test_solve_BunchKaufman(){
     
 }
 
-void test_LU_solver(){
-    /*
-    A =
-         211          63         252         569         569
-          63          27          72          81          81
-         252          72         287         608         608
-         569          81         608        4429        1902
-         569          81         608        1902        1902
-    b = [3,4,5,6,7].T
-    x should be: [0.4339, 1.0693, -0.8307, -0.0004, 0.0943].T
-    */
-    double* A = (double*)malloc(25 * sizeof(double));  
-    double* b = (double*)malloc(5 * sizeof(double)); 
-    double* x = (double*)malloc(5 * sizeof(double));
-    A[0 * 5 + 0] = 211; A[0 * 5 + 1] = 63; A[0 * 5 + 2] = 252; A[0 * 5 + 3] = 569 ; A[0 * 5 + 4] = 569;
-    A[1 * 5 + 0] = 63 ; A[1 * 5 + 1] = 27; A[1 * 5 + 2] = 72 ; A[1 * 5 + 3] = 81  ; A[1 * 5 + 4] = 81;
-    A[2 * 5 + 0] = 252; A[2 * 5 + 1] = 72; A[2 * 5 + 2] = 287; A[2 * 5 + 3] = 608 ; A[2 * 5 + 4] = 608;
-    A[3 * 5 + 0] = 569; A[3 * 5 + 1] = 81; A[3 * 5 + 2] = 608; A[3 * 5 + 3] = 4429; A[4 * 5 + 4] = 1902;
-    A[4 * 5 + 0] = 569; A[4 * 5 + 1] = 81; A[4 * 5 + 2] = 608; A[4 * 5 + 3] = 1902; A[5 * 5 + 4] = 1902;
-    
-    for(int i = 0; i < 5; i++){
-        b[i] = i+3;
-    }
-
-    LUdecomp(A,b,x,3,2);
-    cout << "solved x:\n";
-    for(int i = 0; i < 5; i++){
-        cout << x[i] << " ";
-    }
-    cout << endl;
-    free(A);
-    free(x);
-    free(b);
-}
-
 
 void testBunchKaufman1(){
     const int M = 3;
@@ -260,7 +225,7 @@ void testBunchKaufman1(){
     A[3] = 98;    A[4] = 83;    A[5] = 54;
     A[6] = 49;    A[7] = 54;    A[8] = 37;
 
-    BunchKaufman(A, L, P, pivot, M);
+    BunchKaufman_block(A, L, P, pivot, M, 48);
     printf("L \n");
     for(int i = 0; i < M; i++) {
         for(int j = 0; j < M; j++) {
@@ -301,7 +266,7 @@ void testBunchKaufman2(){
     A[10] = 252; A[11] = 72; A[12] = 287; A[13] =  608; A[14] =  608;
     A[15] = 569; A[16] = 81; A[17] = 608; A[18] = 4429; A[19] = 1902;
     A[20] = 569; A[21] = 81; A[22] = 608; A[23] = 1902; A[24] = 1902;
-    BunchKaufman(A, L, P, pivot, M);
+    BunchKaufman_block(A, L, P, pivot, M, 48);
     printf("L \n");
     for(int i = 0; i < M; i++) {
         for(int j = 0; j < M; j++) {
@@ -345,7 +310,7 @@ void testBunchKaufman3(){
     A[4]  = 12;  A[5]  =  -8;  A[6]  = -13;  A[7]  =  4;
     A[8]  =  3;  A[9]  = -13;  A[10] =  -7;  A[11] =  1;
     A[12] = -6;  A[13] =   4;  A[14] =   1;  A[15] =  6;
-    BunchKaufman(A, L, P, pivot, M);
+    BunchKaufman_block(A, L, P, pivot, M, 48);
     printf("L \n");
     for(int i = 0; i < M; i++) {
         for(int j = 0; j < M; j++) {
@@ -387,7 +352,7 @@ void testBunchKaufman4(){
     A[10] = 252; A[11] =  0; A[12] = 287; A[13] =  608; A[14] =  608;
     A[15] = 569; A[16] = 81; A[17] = 608; A[18] =    0; A[19] = 1902;
     A[20] = 569; A[21] = 81; A[22] = 608; A[23] = 1902; A[24] = 1902;
-    BunchKaufman(A, L, P, pivot, M);
+    BunchKaufman_block(A, L, P, pivot, M, 48);
     printf("L \n");
     for(int i = 0; i < M; i++) {
         for(int j = 0; j < M; j++) {
@@ -491,7 +456,7 @@ void testBunchKaufmanBig(string matrix_path, int M){
 
     read_matrix(A,M,M,matrix_path);
 
-    BunchKaufman(A, L, P, pivot, M);
+    BunchKaufman_block(A, L, P, pivot, M, 48);
 
     free(A);
     free(L);
@@ -510,6 +475,6 @@ int main(){
     // testBunchKaufman2();
     // testBunchKaufman3();
     // testBunchKaufman4();
-    // test_BunchKaufmanAndSolver1();
-    testBunchKaufmanBig("../test_matrix/size5.txt",5);
+    test_BunchKaufmanAndSolver1();
+    // testBunchKaufmanBig("../test_matrix/size5.txt",5);
 }

@@ -3,6 +3,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include "blockbk.h"
 
 
 void LUdecomp(double* A, double* b, double* sol, int N, int func_dim);
