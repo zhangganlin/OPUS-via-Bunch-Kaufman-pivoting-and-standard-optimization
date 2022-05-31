@@ -291,12 +291,17 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
         // build_surrogate(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
         #ifndef FLOP_COUNTER
         start = start_tsc();
+        #else
+        flops() = 0;
         #endif
+        
             build_surrogate(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
         
         #ifndef FLOP_COUNTER
         cycle_stastic.step5_time.push_back(stop_tsc(start));
         cycle_stastic.step5_x_history_size.push_back(valid_x_history_size);
+        #else
+        flop_stastic.step5_time.push_back(flops());
         #endif
 
         this_round_x_history_size = valid_x_history_size;
@@ -306,6 +311,8 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
         cycle_stastic.step6b.push_back(0);
         cycle_stastic.step7.push_back(0);
         cycle_stastic.step8.push_back(0);
+        #else
+        flop_stastic.step6b.push_back(0);
         #endif
         // update all particles
         for (i=0; i<settings->size; i++) {       
@@ -337,8 +344,9 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
             }
             #ifndef FLOP_COUNTER
             cycle_stastic.step6a[step] += stop_tsc(start);
-
             start = start_tsc();
+            #else
+            flops() = 0;
             #endif
             //6b
             //using surrogate model here
@@ -368,6 +376,8 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
            
             #ifndef FLOP_COUNTER
             cycle_stastic.step6b[step] += stop_tsc(start);
+            #else
+            flop_stastic.step6b[step] += flops();
             #endif
             // -----------------------------------------------------------------------------------
 
@@ -528,10 +538,8 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
 
     #ifndef FLOP_COUNTER
     print_stastic(cycle_stastic,settings);
-    #endif
-
-    #ifdef FLOP_COUNTER
-    // print_stastic(flop_stastic,settings);
+    #else
+    print_stastic(flop_stastic,settings);
     #endif
 
 }

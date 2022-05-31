@@ -113,7 +113,7 @@ void matrix_update_sparse_d_unroll_rename_vec_tail(double* mat_A, double* mat_D,
     __m256d L_t_j_n_k_r_l_vec_00, L_t_j_n_k_r_l_vec_04, L_t_j_n_k_r_l_vec_10, L_t_j_n_k_r_l_vec_14, L_t_j_n_k_r_l_vec_20, L_t_j_n_k_r_l_vec_24, L_t_j_n_k_r_l_vec_30, L_t_j_n_k_r_l_vec_34;
     __m256i jump_idx = _mm256_set_epi64x(n_3+3, n_2+2, n+1, 0);
     __m256i jump_idx_n = _mm256_set_epi64x(n_3, n_2, n, 0);
-    double d_res[4];
+    double* d_res = (double*)aligned_alloc(32,4*sizeof(double));
 
     for(int j = k, j_n = k_n; j < n; j += r, j_n += r_n){
         remaining_col_num_j = min(r + j, n);
@@ -243,7 +243,7 @@ void matrix_update_sparse_d_unroll_rename_vec_tail(double* mat_A, double* mat_D,
                     }
                     d_vec_0 = _mm256_add_pd(d_vec_00, d_vec_04);
                     d_vec_0 = _mm256_hadd_pd(d_vec_0, d_vec_0);
-                    _mm256_storeu_pd(d_res, d_vec_0);
+                    _mm256_store_pd(d_res, d_vec_0);
                     d_0 = d_res[0] + d_res[3];
 
                     for( ; l < r; l++, k_r_l ++, k_r_l_n += n){
@@ -269,6 +269,7 @@ void matrix_update_sparse_d_unroll_rename_vec_tail(double* mat_A, double* mat_D,
 
         }
     }
+    free(d_res);
 }
 
 void permute(double* A, int* P, int b_row_start, int b_row_end, int b_col_start, int b_col_end, int n, int dim){

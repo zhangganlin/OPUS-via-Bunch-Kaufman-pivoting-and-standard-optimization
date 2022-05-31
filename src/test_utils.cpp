@@ -169,14 +169,17 @@ void print_stastic(stastic_t& obj, opus_settings_t *settings){
     std::cout << "  num_trial: " << settings->r << std::endl;
     std::cout << "  side_len: " << settings->side_len << std::endl;
 
+	#ifndef FLOP_COUNTER
     std::cout << "step1to4: " << obj.step1to4 << std::endl;
-    
+    #endif
+
     std::cout << "step5_time: [";
     for(int i =0; i < obj.step5_time.size()-1; i++){
         std::cout << obj.step5_time[i] << ",";
     }
     std::cout << obj.step5_time[obj.step5_time.size()-1] << "]" << std::endl;
 
+	#ifndef FLOP_COUNTER
     std::cout << "step5_x_history_size: [";
     for(int i =0; i < obj.step5_x_history_size.size()-1; i++){
         std::cout << obj.step5_x_history_size[i] << ",";
@@ -188,6 +191,7 @@ void print_stastic(stastic_t& obj, opus_settings_t *settings){
         std::cout << obj.step6a[i] << ",";
     }
     std::cout << obj.step6a[obj.step6a.size()-1] << "]" << std::endl;
+	#endif
 
     std::cout << "step6b: [";
     for(int i =0; i < obj.step6b.size()-1; i++){
@@ -195,7 +199,7 @@ void print_stastic(stastic_t& obj, opus_settings_t *settings){
     }
     std::cout << obj.step6b[obj.step6b.size()-1] << "]" << std::endl;
 
-
+	#ifndef FLOP_COUNTER
     std::cout << "step7: [";
     for(int i =0; i < obj.step7.size()-1; i++){
         std::cout << obj.step7[i] << ",";
@@ -207,6 +211,7 @@ void print_stastic(stastic_t& obj, opus_settings_t *settings){
         std::cout << obj.step8[i] << ",";
     }
     std::cout << obj.step8[obj.step8.size()-1] << "]" << std::endl;
+	#endif
 
 
     std::cout << "step9_time: [";
@@ -215,6 +220,7 @@ void print_stastic(stastic_t& obj, opus_settings_t *settings){
     }
     std::cout << obj.step9_time[obj.step9_time.size()-1] << "]" << std::endl;
 
+	#ifndef FLOP_COUNTER
     std::cout << "step9_x_history_size: [";
     for(int i =0; i < obj.step9_x_history_size.size()-1; i++){
         std::cout << obj.step9_x_history_size[i] << ",";
@@ -233,4 +239,5 @@ void print_stastic(stastic_t& obj, opus_settings_t *settings){
         std::cout << obj.step11[i] << ",";
     }
     std::cout << obj.step11[obj.step11.size()-1] << "]" << std::endl;
+	#endif
 }
