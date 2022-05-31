@@ -250,7 +250,6 @@ void solve_diag(double* D, int* pivot, double* x, double* b, int n){
     }
 }
 
-
 void solve_BunchKaufman(double* A, double* x, double* b, int n){
     double* L = (double*)malloc(n*n*sizeof(double));
     double* Pb = (double*)malloc(n*sizeof(double));
@@ -262,7 +261,6 @@ void solve_BunchKaufman(double* A, double* x, double* b, int n){
 
     // BunchKaufman(A,L,P,pivot,n);  // Assume P start from 0
     BunchKaufman_block(A,L,P,pivot,n,BLOCK_SIZE);
-    // BunchKaufman_block(A,L,P,pivot,n,15);
 
     // BunchKaufman_noblock(A,L,P,pivot,n);
     // BunchKaufman(A,L,P,pivot,n);

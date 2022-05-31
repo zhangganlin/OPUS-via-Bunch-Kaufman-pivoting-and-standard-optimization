@@ -257,7 +257,7 @@ void matrix_update_sparse_d_unroll_rename_vec_tail(double* mat_A, double* mat_D,
                     d_1  = 0;
 
                     for(l_id = 1; l_id <= vec_ind[0]; l_id++){
-                        k_r_l = k_r + vec_ind[l_id];
+                        k_r_l = vec_ind[l_id];
                         dij = mat_D[k_r_l * n + n + k_r_l];
                         d_1 += dij * (mat_L[s_i_n+ k_r_l+1] * mat_L[t_j_n + k_r_l] + mat_L[s_i_n + k_r_l] *  mat_L[t_j_n + k_r_l+1]);
                     }
