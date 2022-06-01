@@ -3,6 +3,10 @@
 #include "tsc_x86.h"
 #include <time.h>
 #include <immintrin.h>
+#include <vector>
+#include <string>
+
+// #define FLOP_COUNTER
 
 using namespace std;
 
@@ -748,13 +752,130 @@ double test_function(void (*matrix_update)(double* mat_A, double* mat_D, double*
     return speed_up;
 }
 
-int main(){
-    int n = 300; 
-    int block_size = 9;
-    int repeat = 1;
-    double speed_up = 0;
 
-    speed_up = test_function(matrix_update_sparse_d_unroll_rename_vec_tail,n,repeat,block_size);
-    cout << "speed up: " << speed_up << endl;
+
+void compare_one(void (*matrix_update)(double* mat_A, double* mat_D, double* mat_L, int* vec_ind, int n, int k, int r),
+                int n, double repeat, int block_size, double* A_template, double* A, double* L, double* D, int* pivot_2,
+                vector<myInt64>& cycles_vec, vector<myInt64>& flops_vec){
+    myInt64 start, time;
+    time = 0;
+    
+    #ifdef FLOP_COUNTER
+        flops()=0;
+    #endif
+
+    for(int i = 0; i < repeat; i++){
+        matrix_transpose(A_template,A,n);
+        #ifndef FLOP_COUNTER
+        start = start_tsc();
+        #endif
+        matrix_update(A, D, L, pivot_2, n, block_size, block_size);
+        #ifndef FLOP_COUNTER
+        time += stop_tsc(start);
+        #endif
+    }
+
+    #ifdef FLOP_COUNTER
+        flops_vec.push_back(flops()/repeat);
+    #else
+        cycles_vec.push_back(time/repeat);
+    #endif
+
+}
+
+void compare_all(int n, int block_size, double repeat, unsigned int random_seed,
+                 vector<myInt64>& cycles_vec, vector<myInt64>& flops_vec){
+    srand(random_seed);
+    double* A_template = (double*)malloc(n*n*sizeof(double));
+    double* A = (double*)malloc(n*n*sizeof(double));
+    double* L = (double*)malloc(n*n*sizeof(double));
+    double* D = (double*)malloc(n*n*sizeof(double));
+    int* pivot = (int*)malloc(n*sizeof(int));
+    int* pivot_2 = (int*)malloc(block_size*sizeof(int));
+
+    pivot_2[0] = 0;
+
+    
+    for(int i = 0; i < n; i++){
+        if(i%block_size == 2 || i%block_size == 5 || i%block_size == 10){
+            pivot[i] = 2;        
+        }
+        else if(i%block_size == 3 || i%block_size == 6 || i%block_size == 11){
+            pivot[i] = 0;
+        }        
+        else{
+            pivot[i] = 1;
+        }
+    }
+
+    for(int i = 0; i < block_size; i++){
+        if(i%block_size == 2 || i%block_size == 5 || i%block_size == 10){
+            pivot_2[++pivot_2[0]] = i;
+        }
+    }
+
+    cycles_vec.clear();
+    flops_vec.clear();
+    
+    generate_random_symmetry(A_template,n);
+    generate_random_d(D,n,pivot);
+    generate_random_l(L,n);
+
+    compare_one(matrix_update_gt,n,repeat,block_size,A_template,A,L,D,pivot_2,cycles_vec,flops_vec);
+    compare_one(matrix_update_ijts,n,repeat,block_size,A_template,A,L,D,pivot_2,cycles_vec,flops_vec);
+    compare_one(matrix_update_sparse_d,n,repeat,block_size,A_template,A,L,D,pivot_2,cycles_vec,flops_vec);
+    compare_one(matrix_update_sparse_d_unroll,n,repeat,block_size,A_template,A,L,D,pivot_2,cycles_vec,flops_vec);
+    compare_one(matrix_update_sparse_d_unroll_rename,n,repeat,block_size,A_template,A,L,D,pivot_2,cycles_vec,flops_vec);
+    compare_one(matrix_update_sparse_d_unroll_rename_vec,n,repeat,block_size,A_template,A,L,D,pivot_2,cycles_vec,flops_vec);
+    compare_one(matrix_update_sparse_d_unroll_rename_vec_tail,n,repeat,block_size,A_template,A,L,D,pivot_2,cycles_vec,flops_vec);
+
+    free(A_template);
+    free(A);
+    free(L);
+    free(D);
+    free(pivot);
+    free(pivot_2);
+
+}
+
+
+
+int main(){
+    int n = 2000; 
+    int block_size = 48;
+    double repeat = 100;
+    unsigned int random_seed = 2;
+    vector<myInt64> cycles_vec; vector<myInt64> flops_vec;
+    vector<string> name_vec;
+    name_vec.push_back("matrix_update_gt");
+    name_vec.push_back("matrix_update_ijts");
+    name_vec.push_back("matrix_update_sparse_d");
+    name_vec.push_back("matrix_update_sparse_d_unroll");
+    name_vec.push_back("matrix_update_sparse_d_unroll_rename");
+    name_vec.push_back("matrix_update_sparse_d_unroll_rename_vec");
+    name_vec.push_back("matrix_update_sparse_d_unroll_rename_vec_tail");
+
+    compare_all(n,block_size,repeat,random_seed,cycles_vec,flops_vec);
+
+    cout << "evaluate_func_name: [\"";
+    for(int i = 0; i < name_vec.size()-1; i++){
+        cout << name_vec[i] << "\", \"";
+    }
+    cout << name_vec[name_vec.size()-1] << "\"]\n";
+    #ifdef FLOP_COUNTER
+        cout << "evaluate_func_flops: [";
+        for(int i = 0; i < flops_vec.size()-1; i++){
+            cout << flops_vec[i] << ", ";
+        }
+        cout << flops_vec[flops_vec.size()-1] << "]\n";
+    #else
+        cout << "evaluate_func_cycles: [";
+        for(int i = 0; i < cycles_vec.size()-1; i++){
+            cout << cycles_vec[i] << ", ";
+        }
+        cout << cycles_vec[cycles_vec.size()-1]<< "]\n";
+    #endif
+    
+
     return 0;
 }
