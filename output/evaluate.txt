@@ -1,0 +1,6 @@
+N_points: 2000
+N_x: 200
+d: 30
+evaluate_func_name: ['evaluate_surrogate_gt', 'evaluate_surrogate_rename', 'evaluate_surrogate_reorder_rename', 'evaluate_surrogate_reorder', 'evaluate_surrogate_unroll_8', 'evaluate_surrogate_unroll_8_sqrt', 'evaluate_surrogate_unroll_8_sqrt_sample_vec', 'evaluate_surrogate_unroll_8_sqrt_sample_vec_optimize_load', 'evaluate_surrogate_unroll_8_sqrt_vec', 'evaluate_surrogate_unroll_8_vec_sqrt_vec']
+evaluate_func_cycles: [[149206619], [137288483], [190724377], [185940916], [111751814], [101536214], [65581925], [55382233], [166105447], [108648547]]
+evaluate_func_flops: [[38012200], [38012200], [38012200], [38012200], [38012200], [38012200], [38012200], [38012200], [38012200], [38012200]]
