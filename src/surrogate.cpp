@@ -55,63 +55,37 @@ void build_surrogate(double* points, double* f, int N, int d, double* lambda_c){
     free(b);
 }
 
-void evaluate_surrogate_batch( double* x, double* points,  double* lambda_c, int N_x, int N_points, int d, double* output){
+void evaluate_surrogate_gt( double* x, double* points,  double* lambda_c, int N_x, int N_points, int d, double* output){
     // total flops: 3Nd + 5N + 2d + 1
-    for(int x_idx = 0; x_idx < N_x; x_idx++){
+    for(int pa = 0; pa < N_x; pa++){
         double phi, error, res = 0, sq_phi;
-        int id;
         // flops: 3Nd + 5N
-        int xidxd = x_idx * d;
-        for(int i = 0; i < N_points; i++){
+        for(int pb = 0; pb < N_points; pb++){
             phi = 0;
             // flops: 3d
-
-            id = i * d;
             for(int j = 0; j < d; j++){
-                error = x[xidxd + j] - points[id + j];
+                error = x[pa * d + j] - points[pb * d + j];
                 phi += error * error;
             }
-            double sq_phi = sqrt(phi);            // flops: 1
-            phi = phi * sq_phi;      // flops: 2
-            res += phi * lambda_c[i];   // flops: 2
+            phi = sqrt(phi);            // flops: 1
+            phi = phi * phi * phi;      // flops: 2
+            res += phi * lambda_c[pb];   // flops: 2
+            #ifdef FLOP_COUNTER
+                flops()+=d*3+5;
+            #endif
         }
         // flops: 2d
-        for(int i = 0; i < d; i++){
-            res += x[xidxd + i] * lambda_c[N_points + i];
+        for(int pb = 0; pb < d; pb++){
+            res += x[pa * d + pb] * lambda_c[N_points + pb];
         }
         // flops: 1
         res += lambda_c[N_points + d];
+        #ifdef FLOP_COUNTER
+            flops()+=d*2+1;
+        #endif
 
-        output[x_idx] = res;
+        output[pa] = res;
     }
-}
-
-double evaluate_surrogate( double* x, double* points,  double* lambda_c, int N, int d){
-    // total flops: 3Nd + 5N + 2d + 1
-    double phi, error, res = 0, sq_phi;
-    int id;
-    // flops: 3Nd + 5N
-    for(int i = 0; i < N; i++){
-        phi = 0;
-        // flops: 3d
-
-        int id = i * d;
-
-        for(int j = 0; j < d; j++){
-            error = x[j] - points[id + j];
-            phi += error * error;
-        }
-        double sq_phi = sqrt(phi);            // flops: 1
-        phi = phi * sq_phi;      // flops: 2
-        res += phi * lambda_c[i];   // flops: 2
-    }
-    // flops: 2d
-    for(int i = 0; i < d; i++){
-        res += x[i] * lambda_c[N + i];
-    }
-    // flops: 1
-    res += lambda_c[N + d];
-    return res;
 }
 
 

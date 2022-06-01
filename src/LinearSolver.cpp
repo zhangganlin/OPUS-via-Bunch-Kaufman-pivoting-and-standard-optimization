@@ -97,8 +97,11 @@ void solve_BunchKaufman(double* A, double* x, double* b, int n){
 
     int* pivot = (int*)calloc(n,sizeof(int));
 
-    // BunchKaufman(A,L,P,pivot,n);  // Assume P start from 0
-    BunchKaufman_block(A,L,P,pivot,n,BLOCK_SIZE);
+    // BunchKaufman_block(A,L,P,pivot,n,BLOCK_SIZE);
+
+    int* pivot_idx = (int*)calloc(n+1,sizeof(int));
+    BunchKaufman_subblock(A,L,P,pivot,pivot_idx,n,0,n);
+    free(pivot_idx);
 
     // BunchKaufman_noblock(A,L,P,pivot,n);
     // BunchKaufman(A,L,P,pivot,n);
