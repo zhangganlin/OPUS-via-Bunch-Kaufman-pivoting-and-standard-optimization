@@ -19,6 +19,9 @@ void block_solve_XLtB_inplace_L(double* A, double* L, int b_col, int b_size, int
 				s = s + L[(b_col*b_size+i) * n + b_col*b_size+j] * L[(b_row*b_size+k)*n+b_col*b_size+j];
 			}
 			L[(b_row*b_size+k)*n+b_col*b_size+i] = (A[(b_row*b_size+k)*n+b_col*b_size+i] - s) ;
+            #ifdef FLOP_COUNTER
+                flops() += 2*i + 1;
+            #endif
 		}
 	}
 }
@@ -58,6 +61,9 @@ void block_solve_XDB(double* L, double* D, int b_col, int b_size, int b_row, int
 				}
 				L[(b_row*b_size+k)*n + b_col*b_size+i] = L[(b_row*b_size+k)*n + b_col*b_size+i]/
 														 D[(b_col*b_size+i)*n + b_col*b_size+i];
+                #ifdef FLOP_COUNTER
+                    flops() ++;
+                #endif
 				// X[k*n + i] = B[k*n + i]/D[i*n+i];
 			}
 			else if(pivot[b_col*b_size+i]==2){
@@ -67,13 +73,16 @@ void block_solve_XDB(double* L, double* D, int b_col, int b_size, int b_row, int
 				double d1 = L[(b_row*b_size+k)*n + b_col*b_size+i];
 				double d2 = L[(b_row*b_size+k)*n + b_col*b_size+i+1];
 
-				if((c*a-tb*tb)==0){
+                double c_a_tb_tb = c*a-tb*tb;
+				if((c_a_tb_tb)==0){
 					printf("D is singular!\n");
 				}
-
-				L[(b_row*b_size+k)*n + b_col*b_size+i] = (c*d1-tb*d2)/(c*a-tb*tb);
-				L[(b_row*b_size+k)*n + b_col*b_size+i+1] = (d1*tb-a*d2)/(tb*tb-a*c);
-				
+                
+				L[(b_row*b_size+k)*n + b_col*b_size+i] = (c*d1-tb*d2)/(c_a_tb_tb);
+				L[(b_row*b_size+k)*n + b_col*b_size+i+1] = (d1*tb-a*d2)/(-c_a_tb_tb);
+				 #ifdef FLOP_COUNTER
+                    flops() += 11;
+                #endif
 			}else if(pivot[b_col*b_size+i]==0){
 				continue;
 			}
@@ -156,12 +165,20 @@ void matrix_update_sparse_d_unroll_rename_vec_tail(double* mat_A, double* mat_D,
                         d_vec_24 = _mm256_fmadd_pd(L_s_i_n_k_r_l_vec_4, L_t_j_n_k_r_l_vec_24, d_vec_24);
                         d_vec_30 = _mm256_fmadd_pd(L_s_i_n_k_r_l_vec_0, L_t_j_n_k_r_l_vec_30, d_vec_30);
                         d_vec_34 = _mm256_fmadd_pd(L_s_i_n_k_r_l_vec_4, L_t_j_n_k_r_l_vec_34, d_vec_34);
+
+                        #ifdef FLOP_COUNTER
+                            flops() += 2*4 + 2*8*4;
+                        #endif
                         
                     }
                     d_vec_0 = _mm256_add_pd(d_vec_00, d_vec_04);
                     d_vec_1 = _mm256_add_pd(d_vec_10, d_vec_14);
                     d_vec_2 = _mm256_add_pd(d_vec_20, d_vec_24);
                     d_vec_3 = _mm256_add_pd(d_vec_30, d_vec_34); 
+
+                    #ifdef FLOP_COUNTER
+                        flops() += 4*4;
+                    #endif
 
                     
 
@@ -184,12 +201,19 @@ void matrix_update_sparse_d_unroll_rename_vec_tail(double* mat_A, double* mat_D,
                         d_vec_1 = _mm256_fmadd_pd(L_s_i_n_k_r_l_vec_0, L_t_j_n_k_r_l_vec_10, d_vec_1);
                         d_vec_2 = _mm256_fmadd_pd(L_s_i_n_k_r_l_vec_0, L_t_j_n_k_r_l_vec_20, d_vec_2);
                         d_vec_3 = _mm256_fmadd_pd(L_s_i_n_k_r_l_vec_0, L_t_j_n_k_r_l_vec_30, d_vec_3);
-                        
+
+                        #ifdef FLOP_COUNTER
+                            flops() += 4 + 2*4*4;
+                        #endif
                     }
 
                     d_vec_0 = _mm256_permute4x64_pd(_mm256_hadd_pd(d_vec_0, d_vec_2), 0b11011000);
                     d_vec_2 = _mm256_permute4x64_pd(_mm256_hadd_pd(d_vec_1, d_vec_3), 0b11011000);
                     d_vec = _mm256_hadd_pd(d_vec_0, d_vec_2);
+                    
+                    #ifdef FLOP_COUNTER
+                        flops() += 4*3;
+                    #endif
 
                     double temp;
                     __m256d temp_vec;
@@ -198,9 +222,15 @@ void matrix_update_sparse_d_unroll_rename_vec_tail(double* mat_A, double* mat_D,
                         temp = mat_L[s_i_n + k_r_l] * mat_D[k_r_l_n + k_r_l];
                         temp_vec =  _mm256_set1_pd(temp);
                         d_vec = _mm256_fmadd_pd(temp_vec, L_s_i_n_k_r_l_vec_0, d_vec);
+                        #ifdef FLOP_COUNTER
+                            flops() += 1+2*4;
+                        #endif
                     }
                     
                     A_vec = _mm256_sub_pd(A_vec, d_vec);
+                    #ifdef FLOP_COUNTER
+                        flops() += 4;
+                    #endif
                     _mm256_storeu_pd((double*)(mat_A + s_i_n + j_t), A_vec);
                 }
 
@@ -224,6 +254,9 @@ void matrix_update_sparse_d_unroll_rename_vec_tail(double* mat_A, double* mat_D,
                         
                         d_vec_00 = _mm256_fmadd_pd(L_s_i_n_k_r_l_vec_0, L_t_j_n_k_r_l_vec_00, d_vec_00);
                         d_vec_04 = _mm256_fmadd_pd(L_s_i_n_k_r_l_vec_4, L_t_j_n_k_r_l_vec_04, d_vec_04);
+                        #ifdef FLOP_COUNTER
+                            flops() += 2*4 + 2*2*4;
+                        #endif
 
                     }
 
@@ -240,17 +273,31 @@ void matrix_update_sparse_d_unroll_rename_vec_tail(double* mat_A, double* mat_D,
                         L_s_i_n_k_r_l_vec_0 = _mm256_mul_pd(L_s_i_n_k_r_l_vec_0, D_k_r_l_n_k_r_l_vec_0);
 
                         d_vec_00 = _mm256_fmadd_pd(L_s_i_n_k_r_l_vec_0, L_t_j_n_k_r_l_vec_00, d_vec_00);
+                        #ifdef FLOP_COUNTER
+                            flops() += 4 + 2*4;
+                        #endif
                     }
                     d_vec_0 = _mm256_add_pd(d_vec_00, d_vec_04);
                     d_vec_0 = _mm256_hadd_pd(d_vec_0, d_vec_0);
                     _mm256_store_pd(d_res, d_vec_0);
                     d_0 = d_res[0] + d_res[3];
-
+                    #ifdef FLOP_COUNTER
+                        flops() += 2*4 + 1;
+                    #endif
+                    
                     for( ; l < r; l++, k_r_l ++, k_r_l_n += n){
                         d_0 +=  mat_L[s_i_n + k_r_l] * mat_D[k_r_l_n + k_r_l] * mat_L[t_j_n + k_r_l];
+                        #ifdef FLOP_COUNTER
+                            flops() += 3;
+                        #endif
                     }
                     
                     mat_A[s_i_n + j_t] = mat_A[s_i_n + j_t] - d_0;
+
+                    #ifdef FLOP_COUNTER
+                        flops() += 1;
+                    #endif
+
                 }
                 
                 for(j_t = j, t_j_n = j_n; j_t < remaining_col_num_j; t_j_n += n, j_t += 1){
@@ -263,6 +310,10 @@ void matrix_update_sparse_d_unroll_rename_vec_tail(double* mat_A, double* mat_D,
                     }
                     
                     mat_A[s_i_n + j_t] = mat_A[s_i_n + j_t] - d_1;
+                    
+                    #ifdef FLOP_COUNTER
+                        flops() += vec_ind[0] * 5 + 1;
+                    #endif
                 }
 
             }
@@ -304,7 +355,7 @@ void BunchKaufman_subblock(double* A, double* L, int* P, int* pivot, int* pivot_
     int b_end = min(b_start + b_size, M);
     b_size = b_end - b_start;
 
-    const double alpha = (1+sqrt(17))/8;
+    static const double alpha = (1+sqrt(17))/8;
     int r, i, j, tmp_i;
     int k = b_start;
     double w1, wr;
@@ -327,13 +378,21 @@ void BunchKaufman_subblock(double* A, double* L, int* P, int* pivot, int* pivot_
             }
         }
         inv_Akk = 1.0 / A[k * M + k];
+        #ifdef FLOP_COUNTER
+            flops() += 1 + 1;
+        #endif
         if (abs(A[k * M + k]) >= alpha * w1){
             //A_kk = A[k * M + k];
             for (i = k + 1; i < b_end; i++)  L[i * M + k] = A[i * M + k] * inv_Akk;
+            #ifdef FLOP_COUNTER
+                flops() += b_end - k - 1;
+            #endif
             for (i = k + 1; i < b_end; i++){
                 tmp_d = A[i * M + k];
-                for (j = i; j < b_end; j++)
-                    A[j * M + i] -=  L[j * M + k] * tmp_d;
+                for (j = i; j < b_end; j++) A[j * M + i] -=  L[j * M + k] * tmp_d;
+                #ifdef FLOP_COUNTER
+                    flops() += (b_end - i)*2;
+                #endif
             }
             
             // for (i = k+1; i < b_end; i++) A[i * M + k] = 0.0;
@@ -359,13 +418,22 @@ void BunchKaufman_subblock(double* A, double* L, int* P, int* pivot, int* pivot_
                     if (tmp_d > wr) wr = tmp_d;
                 }
             }
+            #ifdef FLOP_COUNTER
+                flops() += 3;
+                if (abs(A[k * M + k]) * wr < alpha * w1 * w1) flops() += 1;
+            #endif
             if (abs(A[k * M + k]) * wr >= alpha * w1 * w1){
                 //A_kk = A[k * M + k];
                 for (i = k + 1; i < b_end; i++)  L[i * M + k] = A[i * M + k] * inv_Akk;
+                #ifdef FLOP_COUNTER
+                    flops() += b_end - k - 1;
+                #endif
                 for (i = k + 1; i < b_end; i++){
                     tmp_d = A[i * M + k];
-                    for (j = i; j < b_end; j++)
-                        A[j * M + i] -=  L[j * M + k] * tmp_d; //##TODO: need to be checked
+                    for (j = i; j < b_end; j++) A[j * M + i] -=  L[j * M + k] * tmp_d; //##TODO: need to be checked
+                    #ifdef FLOP_COUNTER
+                        flops() += (b_end - i)*2;
+                    #endif
                 }
 
                 // for (i = k+1; i < b_end; i++) A[i * M + k] = 0.0;
@@ -374,7 +442,8 @@ void BunchKaufman_subblock(double* A, double* L, int* P, int* pivot, int* pivot_
                 // }
                 pivot[k] = 1;
                 k = k + 1;
-            } else if (abs(A[r * M + r]) >= alpha * wr){
+            }else if (abs(A[r * M + r]) >= alpha * wr){
+                
                 tmp_i = P[k];
                 P[k] = P[r];
                 P[r] = tmp_i;
@@ -401,19 +470,19 @@ void BunchKaufman_subblock(double* A, double* L, int* P, int* pivot, int* pivot_
                 //A_kk = A[k * M + k];
                 inv_Akk = 1.0 / A[k * M + k];
                 for (i = k + 1; i < b_end; i++)  L[i * M + k] = A[i * M + k] * inv_Akk; /// A_kk;
+                #ifdef FLOP_COUNTER
+                    flops() += b_end - k - 1 + 1;
+                #endif
                 for (i = k + 1; i < b_end; i++){
                     tmp_d = A[i * M + k];
                     for (j = i; j < b_end; j++){
                         A[j * M + i] -=  L[j * M + k] * tmp_d; //##TODO: need to be checked
                     }
+                    #ifdef FLOP_COUNTER
+                        flops() += (b_end - i)*2;
+                    #endif
                 }
                 
-                // for (i = k+1; i < b_end; i++){
-                //      A[i * M + k] = 0.0;
-                // }
-                // for (i = k+1; i < b_end; i++){
-                //      A[k * M + i] = 0.0;
-                // }
                 pivot[k] = 1;
                 k = k + 1;
             } else {
@@ -450,24 +519,26 @@ void BunchKaufman_subblock(double* A, double* L, int* P, int* pivot, int* pivot_
                 invE_22 = A[k * M + k] * invE;// / detE;
                 invE_12 = - A[(k+1) * M + k] * invE;// / detE;
                 invE_21 = invE_12;
+                #ifdef FLOP_COUNTER
+                    flops() += 7;
+                #endif
                 for (i = k + 2; i < b_end; i++){
                     L[i * M + k] = A[i * M + k] * invE_11 + A[i * M + k+1] * invE_21;
                     L[i * M + k+1] = A[i * M + k] * invE_12 + A[i * M + k+1] * invE_22;
                 }
+                #ifdef FLOP_COUNTER
+                    flops() += (b_end-k-2) * 6;
+                #endif
 
                 for (j = k+2; j < b_end; j++){
                     for(i = j; i < b_end ; i++){
                         A[i * M + j] -= L[i * M + k] * A[j * M + k] + L[i * M + k+1] * A[j * M + k+1];
                     }
+                    #ifdef FLOP_COUNTER
+                        flops() += (b_end - i)*4;
+                    #endif
                 }
-                // for (i = k+2; i < b_end; i++){
-                //     A[i * M + k] = 0.0;
-                //     A[i * M + k+1] = 0.0;
-                // }
-                // for (i = k+2; i < b_end; i++){
-                //      A[k * M + i] = 0.0;
-                //      A[(k+1) * M + i] = 0.0;
-                //  }
+                
                 pivot[k] = 2;
                 pivot_idx[++pivot_cnt] = k;
                 
@@ -494,6 +565,9 @@ void BunchKaufman_block(double* A, double* L, int* P, int* pivot, int n, int r){
         return;
     }
     int num_block = ceil((double)n / (double)r);
+    #ifdef FLOP_COUNTER
+        flops() += 1;
+    #endif
     BunchKaufman_subblock(A, L, P, pivot, pivot_idx, n, 0, r);
     // store D in A, may have bugs here
     permute(A, P, r, n, 0, r, n, 1);

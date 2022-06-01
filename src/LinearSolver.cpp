@@ -1,6 +1,7 @@
 #include "LinearSolver.h"
 #include "blockbk.h"
 #include <stdio.h>
+#include "test_utils.h"
 
 void solve_lower(double* L, double* x, double* b, int n){
     int i,j;
@@ -10,11 +11,20 @@ void solve_lower(double* L, double* x, double* b, int n){
         for(j = 0; j < i; j++) {
             s = s + L[i * n + j] * x[j];
         }
+        
+        #ifdef FLOP_COUNTER
+            flops() += i*2;
+        #endif
+
         if(L[i * n + i] == 0.0){
             printf("LU divide by zero");
             exit(0);
         }
         x[i] = (b[i] - s) /  L[i * n + i];
+
+        #ifdef FLOP_COUNTER
+            flops() += 2;
+        #endif
     }
 }
 
@@ -27,11 +37,18 @@ void solve_upper(double* L, double* x, double* b, int n){
         for(j = i + 1; j < n; j++) {
             s = s + L[j * n + i] * x[j];
         }
+        #ifdef FLOP_COUNTER
+            flops() += (n-i-1)*2;
+        #endif
+
         if(L[i * n + i] == 0.0){
             printf("LU divide by zero");
             exit(0);
         }
         x[i] = (b[i] - s) /  L[i * n + i];
+        #ifdef FLOP_COUNTER
+            flops() += 2;
+        #endif
     }
 }
 
@@ -44,6 +61,9 @@ void solve_diag(double* D, int* pivot, double* x, double* b, int n){
                 printf("D is singular!\n");
             }
             x[i] = b[i]/D[i*n+i];
+            #ifdef FLOP_COUNTER
+                flops() += 1;
+            #endif
         }
         else if(pivot[i]==2){
             double a = D[i*n+i];
@@ -51,13 +71,15 @@ void solve_diag(double* D, int* pivot, double* x, double* b, int n){
             double c = D[(i+1)*n+i+1];
             double d1 = b[i];
             double d2 = b[i+1];
-
-            if((c*a-tb*tb)==0){
+            double denorminator = c*a-tb*tb;
+            if(denorminator==0){
                 printf("D is singular!\n");
             }
-
-            x[i] = (c*d1-tb*d2)/(c*a-tb*tb);
-            x[i+1] = (d1*tb-a*d2)/(tb*tb-a*c);
+            x[i] = (c*d1-tb*d2)/denorminator;
+            x[i+1] = (d1*tb-a*d2)/(-denorminator);
+            #ifdef FLOP_COUNTER
+                flops() += 11;
+            #endif
             
         }else if(pivot[i]==0){
             continue;

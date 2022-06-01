@@ -3,6 +3,7 @@
 #define OPUS_H_
 
 #include "config.h"
+#include "blockbk.h"
 
 // CONSTANTS
 #define OPUS_MAX_SIZE 100 // max swarm size
