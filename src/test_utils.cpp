@@ -188,12 +188,12 @@ void print_stastic(stastic_t& obj, opus_settings_t *settings){
     }
     std::cout << obj.step5_x_history_size[obj.step5_x_history_size.size()-1] << "]" << std::endl;
 
-    std::cout << "step6a: [";
+    std::cout << "step6a_time: [";
     for(int i =0; i < obj.step6a.size()-1; i++){
         std::cout << obj.step6a[i] << ",";
     }
     std::cout << obj.step6a[obj.step6a.size()-1] << "]" << std::endl;
-    std::cout << "step6b: [";
+    std::cout << "step6b_time: [";
     #else
     std::cout << "step6b_flop: [";
     #endif
@@ -203,13 +203,13 @@ void print_stastic(stastic_t& obj, opus_settings_t *settings){
     std::cout << obj.step6b[obj.step6b.size()-1] << "]" << std::endl;
 
 	#ifndef FLOP_COUNTER
-    std::cout << "step7: [";
+    std::cout << "step7_time: [";
     for(int i =0; i < obj.step7.size()-1; i++){
         std::cout << obj.step7[i] << ",";
     }
     std::cout << obj.step7[obj.step7.size()-1] << "]" << std::endl;
 
-    std::cout << "step8: [";
+    std::cout << "step8_time: [";
     for(int i =0; i < obj.step8.size()-1; i++){
         std::cout << obj.step8[i] << ",";
     }
@@ -232,13 +232,13 @@ void print_stastic(stastic_t& obj, opus_settings_t *settings){
     std::cout << obj.step9_x_history_size[obj.step9_x_history_size.size()-1] << "]" << std::endl;
 
 
-    std::cout << "step10: [";
+    std::cout << "step10_time: [";
     for(int i =0; i < obj.step10.size()-1; i++){
         std::cout << obj.step10[i] << ",";
     }
     std::cout << obj.step10[obj.step10.size()-1] << "]" << std::endl;
 
-    std::cout << "step11: [";
+    std::cout << "step11_time: [";
     for(int i =0; i < obj.step11.size()-1; i++){
         std::cout << obj.step11[i] << ",";
     }

@@ -7,6 +7,10 @@
 #include <immintrin.h>
 #include <cstring>
 #include "test_utils.h"
+#include <vector>
+#include <string>
+
+// #define FLOP_COUNTER
 
 using namespace std;
 static double sqrtsd (double x) {
@@ -1255,8 +1259,64 @@ double test_function(void (*eval)(double* x, double* points,  double* lambda_c, 
     return time / (double)repeat;
 }
 
+
+void compare_one(void (*eval)(double* x, double* points,  double* lambda_c, int N_x, int N_points, int d, double* output),
+                int N_points, int N_x, int d, int repeat, int warmup, double*x, double*points, double*lambda_c, double* result,
+                vector<myInt64>& cycles_vec, vector<myInt64>& flops_vec){
+    myInt64 start;
+    for(int i = 0; i < warmup; i++){
+        eval(x,points,lambda_c,N_x,N_points,d,result);
+    }
+    #ifdef FLOP_COUNTER
+    flops() = 0;
+    #else
+    start = start_tsc();
+    #endif
+    for(int i = 0; i < repeat; i++){
+        eval(x,points,lambda_c,N_x,N_points,d,result);
+    }
+    #ifdef FLOP_COUNTER
+    flops_vec.push_back(flops()/repeat);
+    #else
+    cycles_vec.push_back(stop_tsc(start)/repeat);
+    #endif              
+}
+
+void compare_all(int N_points, int N_x, int d, double repeat, int warmup, unsigned int random_seed,
+                 vector<myInt64>& cycles_vec, vector<myInt64>& flops_vec){
+    srand(random_seed);
+    double* x = (double*)malloc(N_x * d * sizeof(double));
+    double* points = (double*)malloc(N_points * d * sizeof(double));
+    double* lambda_c = (double*)aligned_alloc(32,(N_points + d + 1)*sizeof(double));
+    double* result = (double*)malloc(N_x * sizeof(double));
+
+    generate_random(x, N_x * d);
+    generate_random(points, N_points * d);
+    generate_random(lambda_c, N_points + d + 1);
+
+    cycles_vec.clear();
+    flops_vec.clear();
+    
+    compare_one(evaluate_surrogate_gt,N_points,N_x,d,repeat,warmup,x,points,lambda_c,result,cycles_vec,flops_vec);
+    compare_one(evaluate_surrogate_rename,N_points,N_x,d,repeat,warmup,x,points,lambda_c,result,cycles_vec,flops_vec);
+    compare_one(evaluate_surrogate_reorder_rename,N_points,N_x,d,repeat,warmup,x,points,lambda_c,result,cycles_vec,flops_vec);
+    compare_one(evaluate_surrogate_reorder,N_points,N_x,d,repeat,warmup,x,points,lambda_c,result,cycles_vec,flops_vec);
+    compare_one(evaluate_surrogate_unroll_8,N_points,N_x,d,repeat,warmup,x,points,lambda_c,result,cycles_vec,flops_vec);
+    compare_one(evaluate_surrogate_unroll_8_sqrt,N_points,N_x,d,repeat,warmup,x,points,lambda_c,result,cycles_vec,flops_vec);
+    compare_one(evaluate_surrogate_unroll_8_sqrt_sample_vec,N_points,N_x,d,repeat,warmup,x,points,lambda_c,result,cycles_vec,flops_vec);
+    compare_one(evaluate_surrogate_unroll_8_sqrt_sample_vec_optimize_load,N_points,N_x,d,repeat,warmup,x,points,lambda_c,result,cycles_vec,flops_vec);
+    compare_one(evaluate_surrogate_unroll_8_sqrt_vec,N_points,N_x,d,repeat,warmup,x,points,lambda_c,result,cycles_vec,flops_vec);
+    compare_one(evaluate_surrogate_unroll_8_vec_sqrt_vec,N_points,N_x,d,repeat,warmup,x,points,lambda_c,result,cycles_vec,flops_vec);
+
+    free(x);
+    free(points);
+    free(lambda_c);
+    free(result);
+}
+
+
 int main(){
-    test_gt();
+    // test_gt();
     // double feq = 2.4*1000000000;
 
     // vector<int> N;
@@ -1275,4 +1335,42 @@ int main(){
     //     cout << t <<", ";
     // }
     // cout << endl;
+    int N_points = 2000;
+    int N_x = 200;
+    int d = 30;
+    double repeat = 1000;
+    int warmup = 10;
+    unsigned int random_seed = 2;
+    vector<myInt64> cycles_vec; vector<myInt64> flops_vec;
+    vector<string> name_vec;
+    name_vec.push_back("evaluate_surrogate_gt");
+    name_vec.push_back("evaluate_surrogate_rename");
+    name_vec.push_back("evaluate_surrogate_reorder_rename");
+    name_vec.push_back("evaluate_surrogate_reorder");
+    name_vec.push_back("evaluate_surrogate_unroll_8");
+    name_vec.push_back("evaluate_surrogate_unroll_8_sqrt");
+    name_vec.push_back("evaluate_surrogate_unroll_8_sqrt_sample_vec");
+    name_vec.push_back("evaluate_surrogate_unroll_8_sqrt_sample_vec_optimize_load");
+    name_vec.push_back("evaluate_surrogate_unroll_8_sqrt_vec");
+    name_vec.push_back("evaluate_surrogate_unroll_8_vec_sqrt_vec");
+
+    compare_all(N_points,N_x,d,repeat,warmup,random_seed,cycles_vec,flops_vec);
+    cout << "evaluate_func_name:[";
+    for(int i = 0; i < name_vec.size(); i++){
+        cout << name_vec[i] << ", ";
+    }
+    cout << "]\n";
+    #ifdef FLOP_COUNTER
+        cout << "evaluate_func_flops:[";
+        for(int i = 0; i < flops_vec.size(); i++){
+            cout << flops_vec[i] << ", ";
+        }
+        cout << "]\n";
+    #else
+        cout << "evaluate_func_cycles:[";
+        for(int i = 0; i < cycles_vec.size(); i++){
+            cout << cycles_vec[i] << ", ";
+        }
+        cout << "]\n";
+    #endif
 }
