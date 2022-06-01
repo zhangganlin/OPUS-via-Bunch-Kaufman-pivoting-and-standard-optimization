@@ -3,7 +3,7 @@
 #ifndef TEST_UTILS_H
 #define TEST_UTILS_H
 
-#define FLOP_COUNTER
+// #define FLOP_COUNTER
 
 #include <iostream>
 #include <fstream>

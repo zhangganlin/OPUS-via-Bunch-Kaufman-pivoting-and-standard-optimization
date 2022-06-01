@@ -6,6 +6,7 @@
 #include <time.h>
 #include <immintrin.h>
 #include <cstring>
+#include "test_utils.h"
 
 using namespace std;
 static double sqrtsd (double x) {
@@ -29,6 +30,9 @@ void evaluate_surrogate_gt( double* x, double* points,  double* lambda_c, int N_
             phi = sqrt(phi);            // flops: 1
             phi = phi * phi * phi;      // flops: 2
             res += phi * lambda_c[pb];   // flops: 2
+            #ifdef FLOP_COUNTER
+                flops()+=d*3+5;
+            #endif
         }
         // flops: 2d
         for(int pb = 0; pb < d; pb++){
@@ -36,6 +40,9 @@ void evaluate_surrogate_gt( double* x, double* points,  double* lambda_c, int N_
         }
         // flops: 1
         res += lambda_c[N_points + d];
+        #ifdef FLOP_COUNTER
+            flops()+=d*2+1;
+        #endif
 
         output[pa] = res;
     }
@@ -65,6 +72,10 @@ void evaluate_surrogate_rename( double* x, double* points,  double* lambda_c, in
         }
         // flops: 1
         res += lambda_c[N_points + d];
+        
+        #ifdef FLOP_COUNTER
+            flops()+=N_points*(d*3+4)+d*2+1;
+        #endif
 
         output[pa] = res;
     }
@@ -83,8 +94,12 @@ void evaluate_surrogate_reorder_rename(double* x, double* points,  double* lambd
             for(int pb = 0, pb_d = 0; pb < N_points; pb++, pb_d += d){
                 error = x_pa_j - points[pb_d+ j];
                 phi[pb] += error * error;
+                #ifdef FLOP_COUNTER
+                    flops()+=3;
+                #endif
             }
         }
+        
         for(int pb = 0; pb < N_points; pb++){
             temp_phi = phi[pb];
             sqrt_phi = sqrt(temp_phi); 
@@ -98,6 +113,10 @@ void evaluate_surrogate_reorder_rename(double* x, double* points,  double* lambd
         }
         // flops: 1
         res += lambda_c[N_points + d];
+
+        #ifdef FLOP_COUNTER
+            flops()+=N_points*4 + d*2 +1;
+        #endif
 
         output[pa] = res;
     }
@@ -115,6 +134,9 @@ void evaluate_surrogate_reorder( double* x, double* points,  double* lambda_c, i
             for(int pb = 0; pb < N_points; pb++){
                 error = pa_j - points[pb * d + j];
                 phi[pb] += error * error;
+                #ifdef FLOP_COUNTER
+                    flops()+=3;
+                #endif
             }
         }
         for(int pb = 0; pb < N_points; pb++){
@@ -130,7 +152,9 @@ void evaluate_surrogate_reorder( double* x, double* points,  double* lambda_c, i
         }
         // flops: 1
         res += lambda_c[N_points + d];
-
+        #ifdef FLOP_COUNTER
+            flops()+=N_points*4 + d*2 +1;
+        #endif
         output[pa] = res;
     }
 }
@@ -166,25 +190,44 @@ void evaluate_surrogate_unroll_8( double* x, double* points,  double* lambda_c, 
                 phi_5 += error_5 * error_5; 
                 phi_6 += error_6 * error_6; 
                 phi_7 += error_7 * error_7; 
+
+                #ifdef FLOP_COUNTER
+                    flops()+=24;
+                #endif
             }
             phi = phi_0 + phi_1 + phi_2 + phi_3 + phi_4 + phi_5 + phi_6 + phi_7;
+            #ifdef FLOP_COUNTER
+                    flops()+=7;
+                #endif
             phi_res = 0;
             for(; j < d; j++){
                 error = x[pa_d + j] - points[pb_d + j];
                 phi_res += error * error;
+                #ifdef FLOP_COUNTER
+                    flops()+=3;
+                #endif
             }
             phi += phi_res;
 
             sq_phi = sqrt(phi);              // flops: 1
             phi = phi * sq_phi;                     // flops: 2
             res += phi * lambda_c[pb];               // flops: 2
+            #ifdef FLOP_COUNTER
+                flops()+=4;
+            #endif
         }
         // flops: 2d
         for(int i = 0; i < d; i++){
             res += x[pa_d + i] * lambda_c[N_points + i];
+            #ifdef FLOP_COUNTER
+                flops()+=2;
+            #endif
         }
         // flops: 1
         res += lambda_c[N_points + d];
+        #ifdef FLOP_COUNTER
+            flops()+=1;
+        #endif
 
         output[pa] = res;
     }
@@ -222,14 +265,26 @@ void evaluate_surrogate_unroll_8_sqrt( double* x, double* points,  double* lambd
                 phi_5 += error_5 * error_5; 
                 phi_6 += error_6 * error_6; 
                 phi_7 += error_7 * error_7; 
+                #ifdef FLOP_COUNTER
+                    flops()+= 8+16;
+                #endif
             }
             phi = phi_0 + phi_1 + phi_2 + phi_3 + phi_4 + phi_5 + phi_6 + phi_7;
+            #ifdef FLOP_COUNTER
+                flops()+= 7;
+            #endif
             phi_res = 0;
             for(; j < d; j++){
                 error = x[pa_d + j] - points[pb_d + j];
                 phi_res += error * error;
+                #ifdef FLOP_COUNTER
+                    flops()+= 3;
+                #endif
             }
             phi += phi_res;
+            #ifdef FLOP_COUNTER
+                flops()+= 1;
+            #endif
             history_phi[pb] = phi;
         }
         
@@ -245,6 +300,9 @@ void evaluate_surrogate_unroll_8_sqrt( double* x, double* points,  double* lambd
         }
         // flops: 1
         res += lambda_c[N_points + d];
+        #ifdef FLOP_COUNTER
+            flops()+= N_points*4+d*2+1;
+        #endif
         output[pa] = res;
     }
 }
@@ -303,6 +361,10 @@ void evaluate_surrogate_unroll_8_sqrt_sample_vec( double* x, double* points,  do
                 phi_5_vec = _mm256_fmadd_pd(error_5_vec, error_5_vec, phi_5_vec); 
                 phi_6_vec = _mm256_fmadd_pd(error_6_vec, error_6_vec, phi_6_vec); 
                 phi_7_vec = _mm256_fmadd_pd(error_7_vec, error_7_vec, phi_7_vec); 
+
+                #ifdef FLOP_COUNTER
+                    flops()+=24 * 4;
+                #endif
             }
             phi_vec = _mm256_add_pd(
                 _mm256_add_pd(
@@ -314,11 +376,19 @@ void evaluate_surrogate_unroll_8_sqrt_sample_vec( double* x, double* points,  do
                     _mm256_add_pd(phi_6_vec, phi_7_vec)
                 )
             );
+            #ifdef FLOP_COUNTER
+                flops()+=7 * 4;
+            #endif
+
             for(; j < d; j++){
                 x_vec_0 = _mm256_i64gather_pd((double*)(x + pa_d + j), jump_idx, sizeof(double));
                 points_vec_0 = _mm256_broadcast_sd(points + pb_d + j);
                 error_0_vec = _mm256_sub_pd(x_vec_0, points_vec_0);
                 phi_vec = _mm256_fmadd_pd(error_0_vec, error_0_vec, phi_vec); 
+
+                #ifdef FLOP_COUNTER
+                    flops()+=3 * 4;
+                #endif
             }
 
             _mm256_storeu_pd((double*)(history_phi_vec + pb * 4), phi_vec);
@@ -330,17 +400,28 @@ void evaluate_surrogate_unroll_8_sqrt_sample_vec( double* x, double* points,  do
             sq_phi_vec = _mm256_sqrt_pd(phi_vec);
             phi_vec = _mm256_mul_pd(phi_vec, sq_phi_vec);
             res_vec = _mm256_fmadd_pd(phi_vec, lambda_c_vec, res_vec);
+
+            #ifdef FLOP_COUNTER
+                flops()+=4 * 4;
+            #endif
         }
         // flops: 2d
         for(int i = 0; i < d; i++){
             x_vec_0 = _mm256_i64gather_pd((double*)(x + pa_d + i), jump_idx, sizeof(double));
             lambda_c_vec = _mm256_broadcast_sd((double*)(lambda_c + N_points + i));
             res_vec =  _mm256_fmadd_pd(x_vec_0, lambda_c_vec, res_vec);
+
+            #ifdef FLOP_COUNTER
+                flops()+=2 * 4;
+            #endif
         }
         // flops: 1
         lambda_c_vec = _mm256_broadcast_sd((double*)(lambda_c + N_points + d));
         res_vec = _mm256_add_pd(res_vec, lambda_c_vec);
         _mm256_storeu_pd((double*)(output + pa), res_vec);
+        #ifdef FLOP_COUNTER
+            flops()+=1 * 4;
+        #endif
     }
 
     double res, sq_phi, error;
@@ -372,29 +453,54 @@ void evaluate_surrogate_unroll_8_sqrt_sample_vec( double* x, double* points,  do
                 phi_5 += error_5 * error_5; 
                 phi_6 += error_6 * error_6; 
                 phi_7 += error_7 * error_7; 
+
+                #ifdef FLOP_COUNTER
+                    flops()+=24;
+                #endif
             }
             phi = phi_0 + phi_1 + phi_2 + phi_3 + phi_4 + phi_5 + phi_6 + phi_7;
             phi_res = 0;
             for(; j < d; j++){
                 error = x[pa_d + j] - points[pb_d + j];
                 phi_res += error * error;
+
+                #ifdef FLOP_COUNTER
+                    flops()+=3;
+                #endif
             }
             phi += phi_res;
+
+            #ifdef FLOP_COUNTER
+                flops()+=1;
+            #endif
+
             history_phi[pb] = phi;
         }
         
         for(int pb = 0; pb < N_points; pb++){
             phi = history_phi[pb];
             sq_phi = sqrt(phi);              // flops: 1
-            phi = phi * sq_phi;                     // flops: 2
+            phi = phi * sq_phi;                     // flops: 1
             res += phi * lambda_c[pb];               // flops: 2
+
+            #ifdef FLOP_COUNTER
+                flops()+=4;
+            #endif
         }
         // flops: 2d
         for(int i = 0; i < d; i++){
             res += x[pa_d + i] * lambda_c[N_points + i];
+
+            #ifdef FLOP_COUNTER
+                flops()+=2;
+            #endif
         }
         // flops: 1
         res += lambda_c[N_points + d];
+
+        #ifdef FLOP_COUNTER
+            flops()+=1;
+        #endif
         output[pa] = res;
     }
     free(history_phi);
@@ -449,11 +555,18 @@ void evaluate_surrogate_unroll_8_sqrt_sample_vec_optimize_load( double* x, doubl
                 phi_24_vec = _mm256_fmadd_pd(error_24_vec, error_24_vec, phi_24_vec); 
                 phi_30_vec = _mm256_fmadd_pd(error_30_vec, error_30_vec, phi_30_vec); 
                 phi_34_vec = _mm256_fmadd_pd(error_34_vec, error_34_vec, phi_34_vec); 
+
+                #ifdef FLOP_COUNTER
+                    flops() += 32+64;
+                #endif
             }
             phi_0_vec = _mm256_add_pd(phi_00_vec, phi_04_vec);
             phi_1_vec = _mm256_add_pd(phi_10_vec, phi_14_vec);
             phi_2_vec = _mm256_add_pd(phi_20_vec, phi_24_vec);
             phi_3_vec = _mm256_add_pd(phi_30_vec, phi_34_vec); 
+            #ifdef FLOP_COUNTER
+                flops() += 16;
+            #endif
 
             for(; j + 3 < d; j += 4){
                 pa_d_j = pa_d + j, pb_d_j = pb_d + j;
@@ -472,17 +585,27 @@ void evaluate_surrogate_unroll_8_sqrt_sample_vec_optimize_load( double* x, doubl
                 phi_1_vec = _mm256_fmadd_pd(error_10_vec, error_10_vec, phi_1_vec); 
                 phi_2_vec = _mm256_fmadd_pd(error_20_vec, error_20_vec, phi_2_vec); 
                 phi_3_vec = _mm256_fmadd_pd(error_30_vec, error_30_vec, phi_3_vec); 
+
+                #ifdef FLOP_COUNTER
+                    flops() += 16 + 32;
+                #endif
             }
             phi_01_vec = _mm256_permute4x64_pd(_mm256_hadd_pd(phi_0_vec, phi_2_vec), 0b11011000);
             phi_23_vec = _mm256_permute4x64_pd(_mm256_hadd_pd(phi_1_vec, phi_3_vec), 0b11011000);
 
             phi_vec = _mm256_hadd_pd(phi_01_vec, phi_23_vec);
+            #ifdef FLOP_COUNTER
+                flops() += 3 * 4;
+            #endif
 
             for(; j < d; j++){
                 x_vec_00 = _mm256_i64gather_pd((double*)(x + pa_d + j), jump_idx, sizeof(double));
                 points_vec_0 = _mm256_broadcast_sd(points + pb_d + j);
                 error_00_vec = _mm256_sub_pd(x_vec_00, points_vec_0);
                 phi_vec = _mm256_fmadd_pd(error_00_vec, error_00_vec, phi_vec); 
+                #ifdef FLOP_COUNTER
+                    flops() += 4+8;
+                #endif
             }
             _mm256_storeu_pd((double*)(history_phi_vec + pb * 4), phi_vec);
         }
@@ -493,6 +616,9 @@ void evaluate_surrogate_unroll_8_sqrt_sample_vec_optimize_load( double* x, doubl
             sq_phi_vec = _mm256_sqrt_pd(phi_vec);
             phi_vec = _mm256_mul_pd(phi_vec, sq_phi_vec);
             res_vec = _mm256_fmadd_pd(phi_vec, lambda_c_vec, res_vec);
+            #ifdef FLOP_COUNTER
+                    flops() += 4+4+8;
+            #endif
         }
         // flops: 2d
         
@@ -508,20 +634,32 @@ void evaluate_surrogate_unroll_8_sqrt_sample_vec_optimize_load( double* x, doubl
             res_vec_1 =  _mm256_fmadd_pd(x_vec_10, lambda_c_vec, res_vec_1);
             res_vec_2 =  _mm256_fmadd_pd(x_vec_20, lambda_c_vec, res_vec_2);
             res_vec_3 =  _mm256_fmadd_pd(x_vec_30, lambda_c_vec, res_vec_3);
+            #ifdef FLOP_COUNTER
+                flops() += 32;
+            #endif
         }
         res_vec_01 = _mm256_permute4x64_pd(_mm256_hadd_pd(res_vec_0, res_vec_2), 0b11011000);
         res_vec_23 = _mm256_permute4x64_pd(_mm256_hadd_pd(res_vec_1, res_vec_3), 0b11011000);
 
         res_vec = _mm256_add_pd(_mm256_hadd_pd(res_vec_01, res_vec_23), res_vec);
+        #ifdef FLOP_COUNTER
+            flops() += 4 * 3;
+        #endif
         for(; i < d; i++){
             x_vec_00 = _mm256_i64gather_pd((double*)(x + pa_d + i), jump_idx, sizeof(double));
             lambda_c_vec = _mm256_broadcast_sd((double*)(lambda_c + N_points + i));
             res_vec =  _mm256_fmadd_pd(x_vec_00, lambda_c_vec, res_vec);
+            #ifdef FLOP_COUNTER
+                flops() += 8;
+            #endif
         }
 
         // flops: 1
         lambda_c_vec = _mm256_broadcast_sd((double*)(lambda_c + N_points + d));
         res_vec = _mm256_add_pd(res_vec, lambda_c_vec);
+        #ifdef FLOP_COUNTER
+            flops() += 4;
+        #endif
         _mm256_storeu_pd((double*)(output + pa), res_vec);
     }
 
@@ -554,14 +692,26 @@ void evaluate_surrogate_unroll_8_sqrt_sample_vec_optimize_load( double* x, doubl
                 phi_5 += error_5 * error_5; 
                 phi_6 += error_6 * error_6; 
                 phi_7 += error_7 * error_7; 
+                #ifdef FLOP_COUNTER
+                    flops() += 8 + 16;
+                #endif
             }
             phi = phi_0 + phi_1 + phi_2 + phi_3 + phi_4 + phi_5 + phi_6 + phi_7;
+            #ifdef FLOP_COUNTER
+                flops() += 7;
+            #endif
             phi_res = 0;
             for(; j < d; j++){
                 error = x[pa_d + j] - points[pb_d + j];
                 phi_res += error * error;
+                #ifdef FLOP_COUNTER
+                    flops() += 3;
+                #endif
             }
             phi += phi_res;
+            #ifdef FLOP_COUNTER
+                flops() += 1;
+            #endif
             history_phi[pb] = phi;
         }
         
@@ -570,13 +720,22 @@ void evaluate_surrogate_unroll_8_sqrt_sample_vec_optimize_load( double* x, doubl
             sq_phi = sqrt(phi);              // flops: 1
             phi = phi * sq_phi;                     // flops: 2
             res += phi * lambda_c[pb];               // flops: 2
+            #ifdef FLOP_COUNTER
+                flops() += 4;
+            #endif
         }
         // flops: 2d
         for(int i = 0; i < d; i++){
             res += x[pa_d + i] * lambda_c[N_points + i];
+            #ifdef FLOP_COUNTER
+                flops() += 2;
+            #endif
         }
         // flops: 1
         res += lambda_c[N_points + d];
+        #ifdef FLOP_COUNTER
+            flops() += 1;
+        #endif
         output[pa] = res;
     }
     free(history_phi);
@@ -637,6 +796,10 @@ void evaluate_surrogate_unroll_8_sqrt_vec( double* x, double* points,  double* l
                 phi_5 = _mm256_fmadd_pd(error_5, error_5, phi_5); 
                 phi_6 = _mm256_fmadd_pd(error_6, error_6, phi_6); 
                 phi_7 = _mm256_fmadd_pd(error_7, error_7, phi_7); 
+                #ifdef FLOP_COUNTER
+                    flops() += 32+64;
+                #endif
+                
             }
             phi = _mm256_add_pd(
                 _mm256_add_pd(
@@ -652,12 +815,22 @@ void evaluate_surrogate_unroll_8_sqrt_vec( double* x, double* points,  double* l
             _mm256_store_pd((double*)phi_half, phi_half_sum);
             phi_sum = phi_half[0] + phi_half[2];
 
+            #ifdef FLOP_COUNTER
+                flops() += 7*4+4+1;
+            #endif
+
             phi_res = 0;
             for(; j < d; j++){
                 error = x[pa_d + j] - points[pb_d + j];
                 phi_res += error * error;
+                #ifdef FLOP_COUNTER
+                    flops() += 3;
+                #endif
             }
             phi_sum += phi_res;
+            #ifdef FLOP_COUNTER
+                flops() += 1;
+            #endif
             history_phi[pb] = phi_sum;
         }
         
@@ -673,6 +846,9 @@ void evaluate_surrogate_unroll_8_sqrt_vec( double* x, double* points,  double* l
         }
         // flops: 1
         res += lambda_c[N_points + d];
+        #ifdef FLOP_COUNTER
+            flops() += N_points*4+d*2+1;
+        #endif
         output[pa] = res;
     }
     free(history_phi);
@@ -735,6 +911,10 @@ void evaluate_surrogate_unroll_8_vec_sqrt_vec( double* x, double* points,  doubl
                 phi_5 = _mm256_fmadd_pd(error_5, error_5, phi_5); 
                 phi_6 = _mm256_fmadd_pd(error_6, error_6, phi_6); 
                 phi_7 = _mm256_fmadd_pd(error_7, error_7, phi_7); 
+
+                #ifdef FLOP_COUNTER
+                    flops()+=24 * 4;
+                #endif
             }
             phi = _mm256_add_pd(
                 _mm256_add_pd(
@@ -747,23 +927,43 @@ void evaluate_surrogate_unroll_8_vec_sqrt_vec( double* x, double* points,  doubl
                 )
             );
 
+            #ifdef FLOP_COUNTER
+                flops()+=7 * 4;
+            #endif
+
             for(; j + 3 < d; j+=4){
                 x_vec_0 = _mm256_loadu_pd((double*)(x + pa_d + j));
                 points_vec_0 = _mm256_loadu_pd((double*)(points + pb_d + j));
                 error_0 = _mm256_sub_pd(x_vec_0, points_vec_0);
                 phi = _mm256_fmadd_pd(error_0, error_0, phi); 
+
+                #ifdef FLOP_COUNTER
+                    flops()+=3 * 4;
+                #endif
             }
-            phi_half_sum = _mm256_hadd_pd(phi, phi);
+            phi_half_sum = _mm256_hadd_pd(phi, phi); // 4
             _mm256_store_pd((double*)phi_half, phi_half_sum);
-            phi_sum = phi_half[0] + phi_half[2];
+            phi_sum = phi_half[0] + phi_half[2]; // 1
+
+            #ifdef FLOP_COUNTER
+                flops()+=5;
+            #endif
             
             phi_res = 0;
             for(; j < d; j++){
                 error = x[pa_d + j] - points[pb_d + j];
                 phi_res += error * error;
+
+                #ifdef FLOP_COUNTER
+                    flops()+=3;
+                #endif
             }
             phi_sum += phi_res;
             history_phi[pb] = phi_sum;
+
+            #ifdef FLOP_COUNTER
+                flops()+=1;
+            #endif
         }
 
         res_vec = _mm256_set1_pd(0);
@@ -774,25 +974,45 @@ void evaluate_surrogate_unroll_8_vec_sqrt_vec( double* x, double* points,  doubl
             sq_phi_vec = _mm256_sqrt_pd(phi);
             phi = _mm256_mul_pd(phi, sq_phi_vec);
             res_vec = _mm256_fmadd_pd(phi, lambda_c_vec, res_vec);
+
+            #ifdef FLOP_COUNTER
+                flops()+=4 * 4;
+            #endif
             
         }
-        res_vec = _mm256_hadd_pd(res_vec, res_vec);
+        res_vec = _mm256_hadd_pd(res_vec, res_vec); //  4
         _mm256_store_pd(res_half,res_vec);
         res += res_half[0]+res_half[2];
+
+        #ifdef FLOP_COUNTER
+            flops()+=6;
+        #endif
 
         for(;pb<N_points;pb++){
             phi_sum = history_phi[pb];
             sq_phi = sqrt(phi_sum);              // flops: 1
             phi_sum = phi_sum * sq_phi;                     // flops: 2
             res += phi_sum * lambda_c[pb];               // flops: 2
+
+            #ifdef FLOP_COUNTER
+                flops()+=4;
+            #endif
         }
         // flops: 2d
         for(int i = 0; i < d; i++){
             res += x[pa_d + i] * lambda_c[N_points + i];
+
+            #ifdef FLOP_COUNTER
+                flops()+=1;
+            #endif
         }
         // flops: 1
         res += lambda_c[N_points + d];
         output[pa] = res;
+
+        #ifdef FLOP_COUNTER
+            flops()+=1;
+        #endif
     }
     free(history_phi);
     free(phi_half);

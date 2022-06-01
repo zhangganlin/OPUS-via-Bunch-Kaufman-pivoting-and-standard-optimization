@@ -159,6 +159,7 @@ void cycle_stastic_init(stastic_t& obj){
 }
 
 void print_stastic(stastic_t& obj, opus_settings_t *settings){
+    #ifndef FLOP_COUNTER
     std::cout << "parameters:" << std::endl;
     std::cout << "  dim: " << settings->dim << std::endl;
     std::cout << "  range_lo: " << settings->range_lo[0] << std::endl;
@@ -168,12 +169,13 @@ void print_stastic(stastic_t& obj, opus_settings_t *settings){
     std::cout << "  opt_goal: " << settings->goal << std::endl;
     std::cout << "  num_trial: " << settings->r << std::endl;
     std::cout << "  side_len: " << settings->side_len << std::endl;
-
-	#ifndef FLOP_COUNTER
+    std::cout << "  block_size: " << BLOCK_SIZE << std::endl;
     std::cout << "step1to4: " << obj.step1to4 << std::endl;
+    std::cout << "step5_time: [";
+    #else
+    std::cout << "step5_flop: [";
     #endif
 
-    std::cout << "step5_time: [";
     for(int i =0; i < obj.step5_time.size()-1; i++){
         std::cout << obj.step5_time[i] << ",";
     }
@@ -191,9 +193,10 @@ void print_stastic(stastic_t& obj, opus_settings_t *settings){
         std::cout << obj.step6a[i] << ",";
     }
     std::cout << obj.step6a[obj.step6a.size()-1] << "]" << std::endl;
-	#endif
-
     std::cout << "step6b: [";
+    #else
+    std::cout << "step6b_flop: [";
+    #endif
     for(int i =0; i < obj.step6b.size()-1; i++){
         std::cout << obj.step6b[i] << ",";
     }
@@ -211,10 +214,11 @@ void print_stastic(stastic_t& obj, opus_settings_t *settings){
         std::cout << obj.step8[i] << ",";
     }
     std::cout << obj.step8[obj.step8.size()-1] << "]" << std::endl;
-	#endif
-
 
     std::cout << "step9_time: [";
+    #else
+    std::cout << "step9_flop: [";
+    #endif
     for(int i =0; i < obj.step9_time.size()-1; i++){
         std::cout << obj.step9_time[i] << ",";
     }

@@ -17,17 +17,32 @@ void matrix_update_gt(double* mat_A, double* mat_D, double* mat_L, int* vec_ind,
                     for(int l = 0; l < r; l++){
                         //sum_{l}(L[t,l] * d[ll] * L[t,l])
                         d_0 += mat_L[(i+s)*n + k-r+l] * mat_D[(l+k-r)*n + l+k-r] * mat_L[(j+t)*n + k-r+l];
+
+                        #ifdef FLOP_COUNTER
+                            flops()+=3;
+                        #endif  
                     }
                     for(int u = 0; u < r - 1; u++){
                         //sum_{u}(L[s,u+1] * d[u+1,u] * L[t,u])
                         d_n1 += mat_L[(i+s)*n + k-r+u+1] * mat_D[(u+1+k-r)*n + u+k-r] * mat_L[(j+t)*n + k-r+u];
+
+                        #ifdef FLOP_COUNTER
+                            flops()+=3;
+                        #endif
                     }
                     for(int p = 1; p < r; p++){
                         //sum_{p}(L[s,p-1] * d[p-1,p] * L[t,p])
                         d_1 += mat_L[(i+s)*n + k-r+p-1] * mat_D[(p-1+k-r)*n + p+k-r] * mat_L[(j+t)*n + k-r+p];
+
+                        #ifdef FLOP_COUNTER
+                            flops()+=3;
+                        #endif
                     }
                     
                     mat_A[(i+s)*n + (j+t)] = mat_A[(i+s)*n + (j+t)] - d_0 - d_n1 - d_1;
+                    #ifdef FLOP_COUNTER
+                        flops()+=3;
+                    #endif
                 }
             }
         }
@@ -57,6 +72,10 @@ void matrix_update_ijts(double* mat_A, double* mat_D, double* mat_L, int* vec_in
                     }
                     
                     mat_A[(i+s)*n + (j+t)] = mat_A[(i+s)*n + (j+t)] - d_0 - d_n1 - d_1;
+                    #ifdef FLOP_COUNTER
+                        flops()+=r*3+(r-1)*3+(r-1)*3+3;
+                    #endif
+                    
                 }
             }
         }
@@ -79,6 +98,9 @@ void matrix_update_sparse_d(double* mat_A, double* mat_D, double* mat_L, int* ve
                     for(int l = 0, k_r_l_n = ( k_r + l) * n; l < r; l++, k_r_l_n += n){
                         k_r_l = k_r + l;
                         d_0 +=  mat_L[s_i_n + k_r_l] * mat_D[k_r_l_n + k_r_l] * mat_L[t_j_n + k_r_l];
+                        #ifdef FLOP_COUNTER
+                            flops()+=3;
+                        #endif
                     }
                     for(int l_id = 1; l_id <= vec_ind[0]; l_id++){
                         k_r_l = vec_ind[l_id];
@@ -86,6 +108,9 @@ void matrix_update_sparse_d(double* mat_A, double* mat_D, double* mat_L, int* ve
                         d_1 += dij * (mat_L[s_i_n+ k_r_l+1] * mat_L[t_j_n + k_r_l] + mat_L[s_i_n + k_r_l] *  mat_L[t_j_n + k_r_l+1]);
                     }
                     mat_A[s_i_n + j_t] = mat_A[s_i_n + j_t] - d_0 - d_1;
+                    #ifdef FLOP_COUNTER
+                            flops()+=vec_ind[0]*5 + 2;
+                    #endif
                 }
             }
         }
@@ -115,6 +140,9 @@ void matrix_update_sparse_d_unroll(double* mat_A, double* mat_D, double* mat_L, 
                         d_5 +=  mat_L[s_i_n + k_r_l + 5] * mat_D[k_r_l_n + n_5 + k_r_l + 5] * mat_L[t_j_n + k_r_l + 5];
                         d_6 +=  mat_L[s_i_n + k_r_l + 6] * mat_D[k_r_l_n + n_6 + k_r_l + 6] * mat_L[t_j_n + k_r_l + 6];
                         d_7 +=  mat_L[s_i_n + k_r_l + 7] * mat_D[k_r_l_n + n_7 + k_r_l + 7] * mat_L[t_j_n + k_r_l + 7];
+                        #ifdef FLOP_COUNTER
+                            flops()+=24;
+                        #endif
                     }
                     
                     for( ; l + 3 < r; l+=4, k_r_l +=4, k_r_l_n += n_4){
@@ -122,11 +150,22 @@ void matrix_update_sparse_d_unroll(double* mat_A, double* mat_D, double* mat_L, 
                         d_1 +=  mat_L[s_i_n + k_r_l + 1] * mat_D[k_r_l_n + n   + k_r_l + 1] * mat_L[t_j_n + k_r_l + 1];
                         d_2 +=  mat_L[s_i_n + k_r_l + 2] * mat_D[k_r_l_n + n_2 + k_r_l + 2] * mat_L[t_j_n + k_r_l + 2];
                         d_3 +=  mat_L[s_i_n + k_r_l + 3] * mat_D[k_r_l_n + n_3 + k_r_l + 3] * mat_L[t_j_n + k_r_l + 3];
+
+                        #ifdef FLOP_COUNTER
+                            flops()+=12;
+                        #endif
                     }
                     d_0 += (d_1 + d_2 + d_3 + d_4 + d_5 + d_6 + d_7);
+                    #ifdef FLOP_COUNTER
+                        flops()+=7;
+                    #endif
 
                     for( ; l < r; l++, k_r_l ++, k_r_l_n += n){
                         d_0 +=  mat_L[s_i_n + k_r_l] * mat_D[k_r_l_n + k_r_l] * mat_L[t_j_n + k_r_l];
+
+                        #ifdef FLOP_COUNTER
+                            flops()+=3;
+                        #endif
                     }
                     
                     d_1  = 0;
@@ -134,9 +173,16 @@ void matrix_update_sparse_d_unroll(double* mat_A, double* mat_D, double* mat_L, 
                         k_r_l = vec_ind[l_id];
                         dij = mat_D[k_r_l * n + n + k_r_l];
                         d_1 += dij * (mat_L[s_i_n+ k_r_l+1] * mat_L[t_j_n + k_r_l] + mat_L[s_i_n + k_r_l] *  mat_L[t_j_n + k_r_l+1]);
+
+                        #ifdef FLOP_COUNTER
+                            flops()+=5;
+                        #endif
                     }
                     
                     mat_A[s_i_n + j_t] = mat_A[s_i_n + j_t] - d_0 - d_1;
+                    #ifdef FLOP_COUNTER
+                        flops()+=2;
+                    #endif
                 }
             }
         }
@@ -170,6 +216,9 @@ void matrix_update_sparse_d_unroll_rename(double* mat_A, double* mat_D, double* 
                         d_5 +=  mat_L[s_i_n_k_r_l + 5] * mat_D[k_r_l_n_k_r_l + n_5 + 5] * mat_L[t_j_n_k_r_l + 5];
                         d_6 +=  mat_L[s_i_n_k_r_l + 6] * mat_D[k_r_l_n_k_r_l + n_6 + 6] * mat_L[t_j_n_k_r_l + 6];
                         d_7 +=  mat_L[s_i_n_k_r_l + 7] * mat_D[k_r_l_n_k_r_l + n_7 + 7] * mat_L[t_j_n_k_r_l + 7];
+                        #ifdef FLOP_COUNTER
+                            flops()+=24;
+                        #endif
                     }
                     
                     for( ; l + 3 < r; l+=4, k_r_l +=4, k_r_l_n += n_4){
@@ -180,11 +229,20 @@ void matrix_update_sparse_d_unroll_rename(double* mat_A, double* mat_D, double* 
                         d_1 +=  mat_L[s_i_n_k_r_l + 1] * mat_D[k_r_l_n_k_r_l + n   + 1] * mat_L[t_j_n_k_r_l + 1];
                         d_2 +=  mat_L[s_i_n_k_r_l + 2] * mat_D[k_r_l_n_k_r_l + n_2 + 2] * mat_L[t_j_n_k_r_l + 2];
                         d_3 +=  mat_L[s_i_n_k_r_l + 3] * mat_D[k_r_l_n_k_r_l + n_3 + 3] * mat_L[t_j_n_k_r_l + 3];
+                        #ifdef FLOP_COUNTER
+                            flops()+=12;
+                        #endif
                     }
                     d_0 += (d_1 + d_2 + d_3 + d_4 + d_5 + d_6 + d_7);
+                    #ifdef FLOP_COUNTER
+                        flops()+=7;
+                    #endif
 
                     for( ; l < r; l++, k_r_l ++, k_r_l_n += n){
                         d_0 +=  mat_L[s_i_n + k_r_l] * mat_D[k_r_l_n + k_r_l] * mat_L[t_j_n + k_r_l];
+                        #ifdef FLOP_COUNTER
+                            flops()+=3;
+                        #endif
                     }
                     
                     d_1  = 0;
@@ -195,6 +253,9 @@ void matrix_update_sparse_d_unroll_rename(double* mat_A, double* mat_D, double* 
                     }
                     
                     mat_A[s_i_n + j_t] = mat_A[s_i_n + j_t] - d_0 - d_1;
+                    #ifdef FLOP_COUNTER
+                            flops()+=vec_ind[0]*5 + 2;
+                    #endif
                 }
             }
         }
@@ -262,6 +323,10 @@ void matrix_update_sparse_d_unroll_rename_vec(double* mat_A, double* mat_D, doub
                         // d_5 +=  mat_L[s_i_n_k_r_l + 5] * mat_D[k_r_l_n_k_r_l + n_5 + 5] * mat_L[t_j_n_k_r_l + 5];
                         // d_6 +=  mat_L[s_i_n_k_r_l + 6] * mat_D[k_r_l_n_k_r_l + n_6 + 6] * mat_L[t_j_n_k_r_l + 6];
                         // d_7 +=  mat_L[s_i_n_k_r_l + 7] * mat_D[k_r_l_n_k_r_l + n_7 + 7] * mat_L[t_j_n_k_r_l + 7];
+
+                        #ifdef FLOP_COUNTER
+                            flops()+=18 * 4;
+                        #endif
                     }
                     d_vec_0 = _mm256_add_pd(d_vec_00, d_vec_04);
                     d_vec_1 = _mm256_add_pd(d_vec_10, d_vec_14);
@@ -272,6 +337,10 @@ void matrix_update_sparse_d_unroll_rename_vec(double* mat_A, double* mat_D, doub
                     d_vec_2 = _mm256_permute4x64_pd(_mm256_hadd_pd(d_vec_1, d_vec_3), 0b11011000);
                     d_vec = _mm256_hadd_pd(d_vec_0, d_vec_2);
                     _mm256_storeu_pd(d_res, d_vec);
+
+                    #ifdef FLOP_COUNTER
+                        flops()+= 7 * 4;
+                    #endif  
 
                     // for( ; l + 3 < r; l+=4, k_r_l +=4, k_r_l_n += n_4){
                     //     s_i_n_k_r_l = s_i_n + k_r_l;
@@ -291,6 +360,10 @@ void matrix_update_sparse_d_unroll_rename_vec(double* mat_A, double* mat_D, doub
                         d_res[1] +=  temp * mat_L[t_j_n + n + k_r_l];
                         d_res[2] +=  temp * mat_L[t_j_n + n_2 + k_r_l];
                         d_res[3] +=  temp * mat_L[t_j_n + n_3 + k_r_l];
+
+                        #ifdef FLOP_COUNTER
+                            flops()+=9;
+                        #endif
                     }
                     
                     
@@ -298,6 +371,9 @@ void matrix_update_sparse_d_unroll_rename_vec(double* mat_A, double* mat_D, doub
                     mat_A[s_i_n + j_t + 1] = mat_A[s_i_n + j_t + 1] - d_res[1];
                     mat_A[s_i_n + j_t + 2] = mat_A[s_i_n + j_t + 2] - d_res[2];
                     mat_A[s_i_n + j_t + 3] = mat_A[s_i_n + j_t + 3] - d_res[3];
+                    #ifdef FLOP_COUNTER
+                        flops()+=4;
+                    #endif
                 }
 
                 for(; j_t < remaining_col_num_j; t_j_n += n, j_t ++){
@@ -315,6 +391,10 @@ void matrix_update_sparse_d_unroll_rename_vec(double* mat_A, double* mat_D, doub
                         d_5 +=  mat_L[s_i_n_k_r_l + 5] * mat_D[k_r_l_n_k_r_l + n_5 + 5] * mat_L[t_j_n_k_r_l + 5];
                         d_6 +=  mat_L[s_i_n_k_r_l + 6] * mat_D[k_r_l_n_k_r_l + n_6 + 6] * mat_L[t_j_n_k_r_l + 6];
                         d_7 +=  mat_L[s_i_n_k_r_l + 7] * mat_D[k_r_l_n_k_r_l + n_7 + 7] * mat_L[t_j_n_k_r_l + 7];
+
+                        #ifdef FLOP_COUNTER
+                            flops()+=24;
+                        #endif
                     }
                     
                     for( ; l + 3 < r; l+=4, k_r_l +=4, k_r_l_n += n_4){
@@ -325,14 +405,27 @@ void matrix_update_sparse_d_unroll_rename_vec(double* mat_A, double* mat_D, doub
                         d_1 +=  mat_L[s_i_n_k_r_l + 1] * mat_D[k_r_l_n_k_r_l + n   + 1] * mat_L[t_j_n_k_r_l + 1];
                         d_2 +=  mat_L[s_i_n_k_r_l + 2] * mat_D[k_r_l_n_k_r_l + n_2 + 2] * mat_L[t_j_n_k_r_l + 2];
                         d_3 +=  mat_L[s_i_n_k_r_l + 3] * mat_D[k_r_l_n_k_r_l + n_3 + 3] * mat_L[t_j_n_k_r_l + 3];
+                        #ifdef FLOP_COUNTER
+                            flops()+=12;
+                        #endif
                     }
                     d_0 += (d_1 + d_2 + d_3 + d_4 + d_5 + d_6 + d_7);
 
+                    #ifdef FLOP_COUNTER
+                        flops()+=7;
+                    #endif
+
                     for( ; l < r; l++, k_r_l ++, k_r_l_n += n){
                         d_0 +=  mat_L[s_i_n + k_r_l] * mat_D[k_r_l_n + k_r_l] * mat_L[t_j_n + k_r_l];
+                        #ifdef FLOP_COUNTER
+                            flops()+=3;
+                        #endif
                     }
                     
                     mat_A[s_i_n + j_t] = mat_A[s_i_n + j_t] - d_0;
+                    #ifdef FLOP_COUNTER
+                        flops()+=1;
+                    #endif
                 }
 
             }
@@ -352,9 +445,15 @@ void matrix_update_sparse_d_unroll_rename_vec(double* mat_A, double* mat_D, doub
                         k_r_l = vec_ind[l_id];
                         dij = mat_D[k_r_l * n + n + k_r_l];
                         d_1 += dij * (mat_L[s_i_n+ k_r_l+1] * mat_L[t_j_n + k_r_l] + mat_L[s_i_n + k_r_l] *  mat_L[t_j_n + k_r_l+1]);
+                        #ifdef FLOP_COUNTER
+                            flops()+=5;
+                        #endif
                     }
                     
                     mat_A[s_i_n + j_t] = mat_A[s_i_n + j_t] - d_1;
+                    #ifdef FLOP_COUNTER
+                        flops()+=1;
+                    #endif
                 }
             }
         }
@@ -374,7 +473,7 @@ void matrix_update_sparse_d_unroll_rename_vec_tail(double* mat_A, double* mat_D,
     __m256d L_t_j_n_k_r_l_vec_00, L_t_j_n_k_r_l_vec_04, L_t_j_n_k_r_l_vec_10, L_t_j_n_k_r_l_vec_14, L_t_j_n_k_r_l_vec_20, L_t_j_n_k_r_l_vec_24, L_t_j_n_k_r_l_vec_30, L_t_j_n_k_r_l_vec_34;
     __m256i jump_idx = _mm256_set_epi64x(n_3+3, n_2+2, n+1, 0);
     __m256i jump_idx_n = _mm256_set_epi64x(n_3, n_2, n, 0);
-    double d_res[4];
+    double* d_res = (double*)aligned_alloc(32,4*sizeof(double));
 
     for(int j = k, j_n = k_n; j < n; j += r, j_n += r_n){
         remaining_col_num_j = min(r + j, n);
@@ -417,12 +516,20 @@ void matrix_update_sparse_d_unroll_rename_vec_tail(double* mat_A, double* mat_D,
                         d_vec_24 = _mm256_fmadd_pd(L_s_i_n_k_r_l_vec_4, L_t_j_n_k_r_l_vec_24, d_vec_24);
                         d_vec_30 = _mm256_fmadd_pd(L_s_i_n_k_r_l_vec_0, L_t_j_n_k_r_l_vec_30, d_vec_30);
                         d_vec_34 = _mm256_fmadd_pd(L_s_i_n_k_r_l_vec_4, L_t_j_n_k_r_l_vec_34, d_vec_34);
+
+                        #ifdef FLOP_COUNTER
+                            flops() += 2*4 + 2*8*4;
+                        #endif
                         
                     }
                     d_vec_0 = _mm256_add_pd(d_vec_00, d_vec_04);
                     d_vec_1 = _mm256_add_pd(d_vec_10, d_vec_14);
                     d_vec_2 = _mm256_add_pd(d_vec_20, d_vec_24);
                     d_vec_3 = _mm256_add_pd(d_vec_30, d_vec_34); 
+
+                    #ifdef FLOP_COUNTER
+                        flops() += 4*4;
+                    #endif
 
                     
 
@@ -445,12 +552,19 @@ void matrix_update_sparse_d_unroll_rename_vec_tail(double* mat_A, double* mat_D,
                         d_vec_1 = _mm256_fmadd_pd(L_s_i_n_k_r_l_vec_0, L_t_j_n_k_r_l_vec_10, d_vec_1);
                         d_vec_2 = _mm256_fmadd_pd(L_s_i_n_k_r_l_vec_0, L_t_j_n_k_r_l_vec_20, d_vec_2);
                         d_vec_3 = _mm256_fmadd_pd(L_s_i_n_k_r_l_vec_0, L_t_j_n_k_r_l_vec_30, d_vec_3);
-                        
+
+                        #ifdef FLOP_COUNTER
+                            flops() += 4 + 2*4*4;
+                        #endif
                     }
 
                     d_vec_0 = _mm256_permute4x64_pd(_mm256_hadd_pd(d_vec_0, d_vec_2), 0b11011000);
                     d_vec_2 = _mm256_permute4x64_pd(_mm256_hadd_pd(d_vec_1, d_vec_3), 0b11011000);
                     d_vec = _mm256_hadd_pd(d_vec_0, d_vec_2);
+                    
+                    #ifdef FLOP_COUNTER
+                        flops() += 4*3;
+                    #endif
 
                     double temp;
                     __m256d temp_vec;
@@ -459,9 +573,15 @@ void matrix_update_sparse_d_unroll_rename_vec_tail(double* mat_A, double* mat_D,
                         temp = mat_L[s_i_n + k_r_l] * mat_D[k_r_l_n + k_r_l];
                         temp_vec =  _mm256_set1_pd(temp);
                         d_vec = _mm256_fmadd_pd(temp_vec, L_s_i_n_k_r_l_vec_0, d_vec);
+                        #ifdef FLOP_COUNTER
+                            flops() += 1+2*4;
+                        #endif
                     }
                     
                     A_vec = _mm256_sub_pd(A_vec, d_vec);
+                    #ifdef FLOP_COUNTER
+                        flops() += 4;
+                    #endif
                     _mm256_storeu_pd((double*)(mat_A + s_i_n + j_t), A_vec);
                 }
 
@@ -485,6 +605,9 @@ void matrix_update_sparse_d_unroll_rename_vec_tail(double* mat_A, double* mat_D,
                         
                         d_vec_00 = _mm256_fmadd_pd(L_s_i_n_k_r_l_vec_0, L_t_j_n_k_r_l_vec_00, d_vec_00);
                         d_vec_04 = _mm256_fmadd_pd(L_s_i_n_k_r_l_vec_4, L_t_j_n_k_r_l_vec_04, d_vec_04);
+                        #ifdef FLOP_COUNTER
+                            flops() += 2*4 + 2*2*4;
+                        #endif
 
                     }
 
@@ -501,19 +624,33 @@ void matrix_update_sparse_d_unroll_rename_vec_tail(double* mat_A, double* mat_D,
                         L_s_i_n_k_r_l_vec_0 = _mm256_mul_pd(L_s_i_n_k_r_l_vec_0, D_k_r_l_n_k_r_l_vec_0);
 
                         d_vec_00 = _mm256_fmadd_pd(L_s_i_n_k_r_l_vec_0, L_t_j_n_k_r_l_vec_00, d_vec_00);
+                        #ifdef FLOP_COUNTER
+                            flops() += 4 + 2*4;
+                        #endif
                     }
                     d_vec_0 = _mm256_add_pd(d_vec_00, d_vec_04);
                     d_vec_0 = _mm256_hadd_pd(d_vec_0, d_vec_0);
-                    _mm256_storeu_pd(d_res, d_vec_0);
+                    _mm256_store_pd(d_res, d_vec_0);
                     d_0 = d_res[0] + d_res[3];
-
+                    #ifdef FLOP_COUNTER
+                        flops() += 2*4 + 1;
+                    #endif
+                    
                     for( ; l < r; l++, k_r_l ++, k_r_l_n += n){
                         d_0 +=  mat_L[s_i_n + k_r_l] * mat_D[k_r_l_n + k_r_l] * mat_L[t_j_n + k_r_l];
+                        #ifdef FLOP_COUNTER
+                            flops() += 3;
+                        #endif
                     }
                     
                     mat_A[s_i_n + j_t] = mat_A[s_i_n + j_t] - d_0;
-                }
 
+                    #ifdef FLOP_COUNTER
+                        flops() += 1;
+                    #endif
+
+                }
+                
                 for(j_t = j, t_j_n = j_n; j_t < remaining_col_num_j; t_j_n += n, j_t += 1){
                     d_1  = 0;
 
@@ -524,12 +661,17 @@ void matrix_update_sparse_d_unroll_rename_vec_tail(double* mat_A, double* mat_D,
                     }
                     
                     mat_A[s_i_n + j_t] = mat_A[s_i_n + j_t] - d_1;
+                    
+                    #ifdef FLOP_COUNTER
+                        flops() += vec_ind[0] * 5 + 1;
+                    #endif
                 }
 
             }
 
         }
     }
+    free(d_res);
 }
 
 

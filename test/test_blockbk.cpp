@@ -122,17 +122,17 @@ void find_best_block_size(int n, int repeat, int from, int to, int gap){
 
 int main(){
     // test_permute();
-    int n = 1000;
-    int repeat = 10;
+    int n = 2000;
+    int repeat = 20;
     int b_size = 48;
 
-    test_BunchKaufman_block(n,b_size,repeat);
+    // test_BunchKaufman_block(n,b_size,repeat);
 
     // for(int b_size = 20; b_size < 200; b_size += 1){
         // compare_speed(n,b_size,repeat);
     // }
 
-    // find_best_block_size(n,repeat,65,200,1);
+    find_best_block_size(n,repeat,15,120,1);
 
     return 0;
 }

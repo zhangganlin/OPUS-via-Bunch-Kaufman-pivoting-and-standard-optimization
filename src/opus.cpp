@@ -422,6 +422,8 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
         // build_surrogate_eigen(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
         #ifndef FLOP_COUNTER
         start = start_tsc();
+        #else
+        flops() = 0;
         #endif
 
         build_surrogate(x_history,f_history,valid_x_history_size,settings->dim,lambda_c);
@@ -429,6 +431,8 @@ void opus_solve(opus_obj_fun_t obj_fun, void *obj_fun_params,
         #ifndef FLOP_COUNTER
         cycle_stastic.step9_time.push_back(stop_tsc(start));
         cycle_stastic.step9_x_history_size.push_back(valid_x_history_size);
+        #else
+        flop_stastic.step9_time.push_back(flops());
         #endif
         // -----------------------------------------------------------------------------------
 

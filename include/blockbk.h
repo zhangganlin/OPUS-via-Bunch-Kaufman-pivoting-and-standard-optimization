@@ -2,7 +2,7 @@
 #define BLOCKBK_H
 
 
-#define BLOCK_SIZE 48
+#define BLOCK_SIZE 32
 
 #include <iostream>
 #include <fstream>
