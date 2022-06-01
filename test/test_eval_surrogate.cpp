@@ -10,7 +10,7 @@
 #include <vector>
 #include <string>
 
-// #define FLOP_COUNTER
+#define FLOP_COUNTER
 
 using namespace std;
 static double sqrtsd (double x) {
@@ -647,7 +647,7 @@ void evaluate_surrogate_unroll_8_sqrt_sample_vec_optimize_load( double* x, doubl
 
         res_vec = _mm256_add_pd(_mm256_hadd_pd(res_vec_01, res_vec_23), res_vec);
         #ifdef FLOP_COUNTER
-            flops() += 4 * 3;
+            flops() += 4 * 4;
         #endif
         for(; i < d; i++){
             x_vec_00 = _mm256_i64gather_pd((double*)(x + pa_d + i), jump_idx, sizeof(double));
@@ -1007,7 +1007,7 @@ void evaluate_surrogate_unroll_8_vec_sqrt_vec( double* x, double* points,  doubl
             res += x[pa_d + i] * lambda_c[N_points + i];
 
             #ifdef FLOP_COUNTER
-                flops()+=1;
+                flops()+=2;
             #endif
         }
         // flops: 1
@@ -1261,7 +1261,7 @@ double test_function(void (*eval)(double* x, double* points,  double* lambda_c, 
 
 
 void compare_one(void (*eval)(double* x, double* points,  double* lambda_c, int N_x, int N_points, int d, double* output),
-                int N_points, int N_x, int d, int repeat, int warmup, double*x, double*points, double*lambda_c, double* result,
+                int N_points, int N_x, int d, double repeat, int warmup, double*x, double*points, double*lambda_c, double* result,
                 vector<myInt64>& cycles_vec, vector<myInt64>& flops_vec){
     myInt64 start;
     for(int i = 0; i < warmup; i++){
@@ -1335,13 +1335,23 @@ int main(){
     //     cout << t <<", ";
     // }
     // cout << endl;
-    int N_points = 2000;
-    int N_x = 200;
-    int d = 30;
-    double repeat = 1000;
+    int N_points_start = 1000;
+    int N_points_end   = 500000;
+
+    int N_points_gap = 5000;
+    int N_x = 20;
+    int d = 4;
+
+    int N_points_num = 0;
+    for(int i = N_points_start; i < N_points_end; i+=N_points_gap){
+        N_points_num ++;
+    }
+
+    double repeat = 100;
     int warmup = 10;
     unsigned int random_seed = 2;
-    vector<myInt64> cycles_vec; vector<myInt64> flops_vec;
+    vector<vector<myInt64>> cycles_vec(N_points_num,vector<myInt64>()); 
+    vector<vector<myInt64>> flops_vec(N_points_num,vector<myInt64>());
     vector<string> name_vec;
     name_vec.push_back("evaluate_surrogate_gt");
     name_vec.push_back("evaluate_surrogate_rename");
@@ -1354,22 +1364,42 @@ int main(){
     name_vec.push_back("evaluate_surrogate_unroll_8_sqrt_vec");
     name_vec.push_back("evaluate_surrogate_unroll_8_vec_sqrt_vec");
 
-    compare_all(N_points,N_x,d,repeat,warmup,random_seed,cycles_vec,flops_vec);
-    cout << "evaluate_func_name:[";
-    for(int i = 0; i < name_vec.size(); i++){
-        cout << name_vec[i] << ", ";
+
+    cout << "N_points_start: " << N_points_start << endl;
+    cout << "N_points_end: " << N_points_end << endl;
+    cout << "N_points_gap: " << N_points_gap << endl;
+    cout << "N_x: " << N_x << endl;
+    cout << "d: " << d << endl;
+    for(int N_points = N_points_start, i=0; N_points < N_points_end; N_points+=N_points_gap, i++){
+        compare_all(N_points,N_x,d,repeat,warmup,random_seed,cycles_vec[i],flops_vec[i]);
     }
-    cout << "]\n";
+    cout << "evaluate_func_name:[\"";
+    for(int i = 0; i < name_vec.size()-1; i++){
+        cout << name_vec[i] << "\", ";
+    }
+    cout << name_vec[name_vec.size()-1] << "\"]\n";
     #ifdef FLOP_COUNTER
         cout << "evaluate_func_flops:[";
-        for(int i = 0; i < flops_vec.size(); i++){
-            cout << flops_vec[i] << ", ";
+
+        for(int j = 0; j < N_points_num; j++){
+            cout << "[";
+            for(int i = 0; i < flops_vec[j].size()-1; i++){
+                cout << flops_vec[j][i] << ", ";
+            }
+            cout << flops_vec[j][flops_vec[j].size()-1] << "]";
+            if(j<N_points_num-1) cout << ",";
         }
+
         cout << "]\n";
     #else
         cout << "evaluate_func_cycles:[";
-        for(int i = 0; i < cycles_vec.size(); i++){
-            cout << cycles_vec[i] << ", ";
+        for(int j= 0; j < N_points_num; j++){
+            cout << "[";
+            for(int i = 0; i < cycles_vec[j].size()-1; i++){
+                cout << cycles_vec[j][i] << ", ";
+            }
+            cout << cycles_vec[j][cycles_vec[j].size()-1] << "]";
+            if(j<N_points_num-1) cout << ",";
         }
         cout << "]\n";
     #endif

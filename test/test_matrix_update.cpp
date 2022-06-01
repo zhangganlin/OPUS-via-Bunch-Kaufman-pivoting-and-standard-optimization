@@ -86,7 +86,6 @@ void matrix_update_ijts(double* mat_A, double* mat_D, double* mat_L, int* vec_in
     }
 }
 
-
 void matrix_update_sparse_d(double* mat_A, double* mat_D, double* mat_L, int* vec_ind, int n, int k, int r){
     int remaining_col_num_j, remaining_row_num, k_n = k*n, r_n = r*n, n_n = n*n, k_r = k-r, j_t;
     int k_r_l, t_j_n;
@@ -841,11 +840,19 @@ void compare_all(int n, int block_size, double repeat, unsigned int random_seed,
 
 
 int main(){
-    int n = 2000; 
-    int block_size = 48;
-    double repeat = 100;
+    int n_start = 100;
+    int n_end = 3000;
+    int n_gap = 200; 
+    int n_num = 0;
+    for(int i = n_start; i < n_end; i+=n_gap){
+        n_num ++;
+    }
+
+    int block_size = 32;
+    double repeat = 10;
     unsigned int random_seed = 2;
-    vector<myInt64> cycles_vec; vector<myInt64> flops_vec;
+    vector<vector<myInt64>> cycles_vec(n_num,vector<myInt64>()); 
+    vector<vector<myInt64>> flops_vec(n_num,vector<myInt64>());
     vector<string> name_vec;
     name_vec.push_back("matrix_update_gt");
     name_vec.push_back("matrix_update_ijts");
@@ -855,7 +862,12 @@ int main(){
     name_vec.push_back("matrix_update_sparse_d_unroll_rename_vec");
     name_vec.push_back("matrix_update_sparse_d_unroll_rename_vec_tail");
 
-    compare_all(n,block_size,repeat,random_seed,cycles_vec,flops_vec);
+    for(int i = 0, n=n_start; i < n_num; i++, n+=n_gap){
+        compare_all(n,block_size,repeat,random_seed,cycles_vec[i],flops_vec[i]);
+    }
+
+    cout << "n_start: " << n_start << endl << "n_end: " << n_end << endl << "n_gap: " << n_gap << endl;
+    cout << "block_size: " << block_size << endl;
 
     cout << "evaluate_func_name: [\"";
     for(int i = 0; i < name_vec.size()-1; i++){
@@ -864,16 +876,32 @@ int main(){
     cout << name_vec[name_vec.size()-1] << "\"]\n";
     #ifdef FLOP_COUNTER
         cout << "evaluate_func_flops: [";
-        for(int i = 0; i < flops_vec.size()-1; i++){
-            cout << flops_vec[i] << ", ";
+        for(int j = 0; j < n_num; j++){
+            cout << "[";
+            for(int i = 0; i < flops_vec[j].size()-1; i++){
+                cout << flops_vec[j][i] << ", ";
+            }
+            cout << flops_vec[j][flops_vec[j].size()-1];
+            cout << "]";
+            if(j < n_num-1){
+                cout << ",";
+            }
         }
-        cout << flops_vec[flops_vec.size()-1] << "]\n";
+        cout <<  "]\n";
     #else
         cout << "evaluate_func_cycles: [";
-        for(int i = 0; i < cycles_vec.size()-1; i++){
-            cout << cycles_vec[i] << ", ";
+        for(int j = 0; j < n_num; j++){
+            cout << "[";
+            for(int i = 0; i < cycles_vec[j].size()-1; i++){
+                cout << cycles_vec[j][i] << ", ";
+            }
+            cout << cycles_vec[j][cycles_vec[j].size()-1];
+            cout << "]";
+            if(j < n_num-1){
+                cout << ",";
+            }
         }
-        cout << cycles_vec[cycles_vec.size()-1]<< "]\n";
+        cout <<"]\n";
     #endif
     
 
