@@ -33,7 +33,7 @@ def plot_total(path, save = False, save_dir = None):
         fig.tight_layout()
         fig.savefig(save_dir, dpi = 600, format = 'eps')
 
-def plot_two_total(path1, path2, save, save_dir):
+def plot_two_total(path1, path2, save = False, save_dir = None):
     with open(path1, 'r') as f:
         result = yaml.full_load(f)
     cost_for_each_step_total1 = []
@@ -81,7 +81,7 @@ def plot_two_total(path1, path2, save, save_dir):
         fig.tight_layout()
         fig.savefig(save_dir, dpi = 600, format = 'eps')
 
-def plot_step_performance(path, step_name, save, save_dir):
+def plot_step_performance(path, step_name, save = False, save_dir = None):
     with open(path, 'r') as f:
         result = yaml.full_load(f)
     plt.figure(figsize=(20,14), dpi= 160)
@@ -104,7 +104,7 @@ def plot_step_performance(path, step_name, save, save_dir):
         fig.tight_layout()
         fig.savefig(save_dir, dpi = 600, format = 'eps')
 
-def plot_two_step_performance(path1, path2, step_name, save, save_dir):
+def plot_two_step_performance(path1, path2, step_name, save = False, save_dir = None):
     with open(path1, 'r') as f:
         result = yaml.full_load(f)
     plt.figure(figsize=(20,14), dpi= 160)
@@ -138,7 +138,7 @@ def plot_two_step_performance(path1, path2, step_name, save, save_dir):
         fig.tight_layout()
         fig.savefig(save_dir, dpi = 600, format = 'eps')
     
-def plot_step_performances(path, name, x_axis_name, save, save_dir):
+def plot_step_performances(path, name, x_axis_name, save = False, save_dir = None):
     with open(path, 'r') as f:
         result = yaml.full_load(f)
     result['evaluate_func_cycles'] = (np.array(result['evaluate_func_cycles']).T).tolist()
@@ -171,7 +171,7 @@ def plot_step_performances(path, name, x_axis_name, save, save_dir):
         fig.tight_layout()
         fig.savefig(save_dir, dpi = 600, format = 'eps')
 
-def plot_blocksize_speedup(path, save, save_dir):
+def plot_blocksize_speedup(path, save = False, save_dir = None):
     path = '../output/blocksize_speedup.txt'
     with open(path, newline='') as csvfile:
         result = []
