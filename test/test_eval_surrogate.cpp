@@ -124,6 +124,7 @@ void evaluate_surrogate_reorder_rename(double* x, double* points,  double* lambd
 
         output[pa] = res;
     }
+    free(phi);
 }
 
 void evaluate_surrogate_reorder( double* x, double* points,  double* lambda_c, int N_x, int N_points, int d, double* output){
@@ -161,6 +162,7 @@ void evaluate_surrogate_reorder( double* x, double* points,  double* lambda_c, i
         #endif
         output[pa] = res;
     }
+    free(phi);
 }
 
 void evaluate_surrogate_unroll_8( double* x, double* points,  double* lambda_c, int N_x, int N_points, int d, double* output){
@@ -309,6 +311,7 @@ void evaluate_surrogate_unroll_8_sqrt( double* x, double* points,  double* lambd
         #endif
         output[pa] = res;
     }
+    free(history_phi);
 }
 
 void evaluate_surrogate_unroll_8_sqrt_sample_vec( double* x, double* points,  double* lambda_c, int N_x, int N_points, int d, double* output){
@@ -1020,6 +1023,7 @@ void evaluate_surrogate_unroll_8_vec_sqrt_vec( double* x, double* points,  doubl
     }
     free(history_phi);
     free(phi_half);
+    free(res_half);
 }
 
 void generate_random(double* arr, int n){
@@ -1117,6 +1121,9 @@ void test_eval1(){
     cout << "current cycles of unrolling-8-sqrt: "<< cur_time8_sqrt/(double)repeat << " and performance improve is: " <<   ((gt_time/(double)repeat)-(cur_time8_sqrt/(double)repeat)) / (gt_time/(double)repeat) << endl;
     cout << "current cycles of unrolling-8-sqrt-vec: "<< cur_time8_sqrt_vec/(double)repeat << " and performance improve is: " <<   ((gt_time/(double)repeat)-(cur_time8_sqrt_vec/(double)repeat)) / (gt_time/(double)repeat) << endl;
 
+    free(x); free(points); free(lambda_c);
+    free(result); free(result8); free(result8_sqrt); free(result8_sqrt_vec);
+    free(groundtruth);
 }
 
 void test_gt(){
@@ -1222,7 +1229,8 @@ void test_gt(){
     // cout << "current cycles of unrolling-8-vec-sqrt-vec: "<< vec_vec_time/(double)repeat << " and performance improve is: " <<   ((gt_time/(double)repeat)/(vec_vec_time/(double)repeat))  << endl;
     cout << "current cycles of unrolling-8-vec-sqrt-sample-vec: "<< sample_vec_time/(double)repeat << " and performance improve is: " <<   ((gt_time/(double)repeat)/(sample_vec_time/(double)repeat))  << endl;
     cout << "current cycles of unrolling-8-vec-sqrt-sample-vec-optimize-load: "<< sample_vec_optimize_load_time/(double)repeat << " and performance improve is: " <<   ((gt_time/(double)repeat)/(sample_vec_optimize_load_time/(double)repeat))  << endl;
-
+    free(x);free(points);free(lambda_c);
+    free(groundtruth); free(result8_sqrt_vec);
 }
 
 
@@ -1299,14 +1307,14 @@ void compare_all(int N_points, int N_x, int d, double repeat, int warmup, unsign
     
     compare_one(evaluate_surrogate_gt,N_points,N_x,d,repeat,warmup,x,points,lambda_c,result,cycles_vec,flops_vec);
     compare_one(evaluate_surrogate_rename,N_points,N_x,d,repeat,warmup,x,points,lambda_c,result,cycles_vec,flops_vec);
-    compare_one(evaluate_surrogate_reorder_rename,N_points,N_x,d,repeat,warmup,x,points,lambda_c,result,cycles_vec,flops_vec);
     compare_one(evaluate_surrogate_reorder,N_points,N_x,d,repeat,warmup,x,points,lambda_c,result,cycles_vec,flops_vec);
+    compare_one(evaluate_surrogate_reorder_rename,N_points,N_x,d,repeat,warmup,x,points,lambda_c,result,cycles_vec,flops_vec);
     compare_one(evaluate_surrogate_unroll_8,N_points,N_x,d,repeat,warmup,x,points,lambda_c,result,cycles_vec,flops_vec);
     compare_one(evaluate_surrogate_unroll_8_sqrt,N_points,N_x,d,repeat,warmup,x,points,lambda_c,result,cycles_vec,flops_vec);
-    compare_one(evaluate_surrogate_unroll_8_sqrt_sample_vec,N_points,N_x,d,repeat,warmup,x,points,lambda_c,result,cycles_vec,flops_vec);
-    compare_one(evaluate_surrogate_unroll_8_sqrt_sample_vec_optimize_load,N_points,N_x,d,repeat,warmup,x,points,lambda_c,result,cycles_vec,flops_vec);
     compare_one(evaluate_surrogate_unroll_8_sqrt_vec,N_points,N_x,d,repeat,warmup,x,points,lambda_c,result,cycles_vec,flops_vec);
     compare_one(evaluate_surrogate_unroll_8_vec_sqrt_vec,N_points,N_x,d,repeat,warmup,x,points,lambda_c,result,cycles_vec,flops_vec);
+    compare_one(evaluate_surrogate_unroll_8_sqrt_sample_vec,N_points,N_x,d,repeat,warmup,x,points,lambda_c,result,cycles_vec,flops_vec);
+    compare_one(evaluate_surrogate_unroll_8_sqrt_sample_vec_optimize_load,N_points,N_x,d,repeat,warmup,x,points,lambda_c,result,cycles_vec,flops_vec);
 
     free(x);
     free(points);
@@ -1338,7 +1346,7 @@ int main(){
     int N_points_start = 1000;
     int N_points_end   = 500000;
 
-    int N_points_gap = 5000;
+    int N_points_gap = 10000;
     int N_x = 20;
     int d = 4;
 
@@ -1355,14 +1363,15 @@ int main(){
     vector<string> name_vec;
     name_vec.push_back("evaluate_surrogate_gt");
     name_vec.push_back("evaluate_surrogate_rename");
-    name_vec.push_back("evaluate_surrogate_reorder_rename");
     name_vec.push_back("evaluate_surrogate_reorder");
+    name_vec.push_back("evaluate_surrogate_reorder_rename");
     name_vec.push_back("evaluate_surrogate_unroll_8");
     name_vec.push_back("evaluate_surrogate_unroll_8_sqrt");
-    name_vec.push_back("evaluate_surrogate_unroll_8_sqrt_sample_vec");
-    name_vec.push_back("evaluate_surrogate_unroll_8_sqrt_sample_vec_optimize_load");
     name_vec.push_back("evaluate_surrogate_unroll_8_sqrt_vec");
     name_vec.push_back("evaluate_surrogate_unroll_8_vec_sqrt_vec");
+    name_vec.push_back("evaluate_surrogate_unroll_8_sqrt_sample_vec");
+    name_vec.push_back("evaluate_surrogate_unroll_8_sqrt_sample_vec_optimize_load");
+    
 
 
     cout << "N_points_start: " << N_points_start << endl;

@@ -6,7 +6,7 @@
 #include <vector>
 #include <string>
 
-// #define FLOP_COUNTER
+#define FLOP_COUNTER
 
 using namespace std;
 
@@ -841,8 +841,8 @@ void compare_all(int n, int block_size, double repeat, unsigned int random_seed,
 
 int main(){
     int n_start = 100;
-    int n_end = 3000;
-    int n_gap = 200; 
+    int n_end = 5000;
+    int n_gap = 100; 
     int n_num = 0;
     for(int i = n_start; i < n_end; i+=n_gap){
         n_num ++;
