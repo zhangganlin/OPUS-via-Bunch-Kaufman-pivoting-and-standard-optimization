@@ -20,9 +20,9 @@ def plot_total(path, save = False, save_dir = None):
 
     cost_for_each_step_total_name = ["s1-s4","s5", "s6a", "s6b","s7", "s8", "s9", "s10", "s11"]
     fig, ax = plt.subplots()
-    ax.bar(range(len(cost_for_each_step_total)),cost_for_each_step_total,tick_label=cost_for_each_step_total_name, color='black')
+    ax.bar(range(len(cost_for_each_step_total)),np.array(cost_for_each_step_total) / (2.4 * 2**30),tick_label=cost_for_each_step_total_name, color='black')
     ax.set_xlabel('Steps (1 - 11)')
-    ax.set_ylabel('[cycles]', loc = 'top', rotation="horizontal")
+    ax.set_ylabel('[seconds]', loc = 'top', rotation="horizontal")
     ax.grid(axis="y", color='white')
     ax.set_facecolor(color='gainsboro')
     ax.set_title('Running time of OPUS on Intel i7-7560 CPU, 2.40GHz\nCompiler: GCC 9.4.0\nFlags:-march=native\n', loc='left', fontweight="bold")
@@ -63,7 +63,7 @@ def plot_two_total(path1, path2, save = False, save_dir = None):
     cost_for_each_step_total_name = ["s1-s4","s5", "s6a", "s6b","s7", "s8", "s9", "s10", "s11"]
     fig, ax = plt.subplots()
     ax.set_xlabel('Steps (1 - 11)')
-    ax.set_ylabel('[cycles]', loc = 'top', rotation="horizontal")
+    ax.set_ylabel('[seconds]', loc = 'top', rotation="horizontal")
     ax.grid(axis="y", color='white')
     ax.set_facecolor(color='gainsboro')
     ax.set_title('Running time of OPUS on Intel i7-7560 CPU, 2.40GHz\nCompiler: GCC 9.4.0\nFlags:-march=native\n', loc='left', fontweight="bold")
@@ -73,8 +73,8 @@ def plot_two_total(path1, path2, save = False, save_dir = None):
 
     width = 0.35  # the width of the bars
     x = np.arange(len(cost_for_each_step_total1))
-    rects1 = ax.bar(x - width/2, cost_for_each_step_total1, width, label='before optimization', color='black')
-    rects2 = ax.bar(x + width/2, cost_for_each_step_total2, width, label='after optimization', color='brown')
+    rects1 = ax.bar(x - width/2, np.array(cost_for_each_step_total1) / (2.4 * 2 ** 30), width, label='before optimization', color='black')
+    rects2 = ax.bar(x + width/2, np.array(cost_for_each_step_total2) / (2.4 * 2 ** 30), width, label='after optimization', color='brown')
     ax.set_xticks(x, cost_for_each_step_total_name)
     ax.legend(title='legend', bbox_to_anchor=(1.05, 1), loc='upper left')
     if save:
