@@ -31,7 +31,7 @@ def plot_total(path, save = False, save_dir = None):
     ax.spines['left'].set_visible(False)
     if save:
         fig.tight_layout()
-        fig.savefig(save_dir, format = 'eps')
+        fig.savefig(save_dir, dpi = 600, format = 'eps')
 
 def plot_two_total(path1, path2, save, save_dir):
     with open(path1, 'r') as f:
@@ -78,6 +78,7 @@ def plot_two_total(path1, path2, save, save_dir):
     ax.set_xticks(x, cost_for_each_step_total_name)
     ax.legend(title='legend', bbox_to_anchor=(1.05, 1), loc='upper left')
     if save:
+        fig.tight_layout()
         fig.savefig(save_dir, dpi = 600, format = 'eps')
 
 def plot_step_performance(path, step_name, save, save_dir):
@@ -100,6 +101,7 @@ def plot_step_performance(path, step_name, save, save_dir):
     ax.spines['left'].set_visible(False)
     ax.plot(x_list, performance, marker = "o", color = 'brown', markersize= 3)
     if save:
+        fig.tight_layout()
         fig.savefig(save_dir, dpi = 600, format = 'eps')
 
 def plot_two_step_performance(path1, path2, step_name, save, save_dir):
@@ -133,6 +135,7 @@ def plot_two_step_performance(path1, path2, step_name, save, save_dir):
     ax.plot(x_list, performance2, marker = "o", color = 'brown', markersize= 3, label = 'after optimization')
     ax.legend(title='legend', bbox_to_anchor=(1.05, 1), loc='upper left')
     if save:
+        fig.tight_layout()
         fig.savefig(save_dir, dpi = 600, format = 'eps')
     
 def plot_step_performances(path, name, x_axis_name, save, save_dir):
@@ -165,6 +168,7 @@ def plot_step_performances(path, name, x_axis_name, save, save_dir):
     handles.reverse()
     ax.legend(handles=handles, title='legend', bbox_to_anchor=(1.05, 1), loc='upper left')
     if save:
+        fig.tight_layout()
         fig.savefig(save_dir, dpi = 600, format = 'eps')
 
 def plot_blocksize_speedup(path, save, save_dir):
@@ -188,4 +192,5 @@ def plot_blocksize_speedup(path, save, save_dir):
     ax.spines['left'].set_visible(False)
     ax.plot(result[0], result[1], color = 'black', marker = 'o', markersize = 3)
     if save:
+        fig.tight_layout()
         fig.savefig(save_dir, dpi = 600, format = 'eps')
