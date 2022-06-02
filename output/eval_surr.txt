@@ -1,6 +1,6 @@
-N_points_start: 1000
-N_points_end: 500000
-N_points_gap: 10000
+n_start: 1000
+n_end: 500000
+n_gap: 10000
 N_x: 20
 d: 4
 evaluate_func_name: ["evaluate_surrogate_gt", evaluate_surrogate_rename", evaluate_surrogate_reorder", evaluate_surrogate_reorder_rename", evaluate_surrogate_unroll_8", evaluate_surrogate_unroll_8_sqrt", evaluate_surrogate_unroll_8_sqrt_vec", evaluate_surrogate_unroll_8_vec_sqrt_vec", evaluate_surrogate_unroll_8_sqrt_sample_vec", evaluate_surrogate_unroll_8_sqrt_sample_vec_optimize_load"]
