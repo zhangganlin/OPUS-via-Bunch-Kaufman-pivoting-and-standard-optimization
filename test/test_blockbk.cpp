@@ -43,6 +43,21 @@ void test_BunchKaufman_block(int n, int b_size, int repeat){
 
 }
 
+void test_BunchKaufman_noblock(int n, int b_size, int repeat){
+    double* A = (double*)malloc(n*n*sizeof(double));
+    double* L = (double*)malloc(n*n*sizeof(double));
+    int* P = (int*)malloc(n*sizeof(int));
+    int* pivot = (int*)malloc(n*sizeof(int));
+    int* pivot_idx = (int*)malloc(n*sizeof(int));  
+    generate_random_symmetry(A,n);
+
+    for(int i = 0; i < repeat; i++){
+        BunchKaufman_subblock(A,L,P,pivot,pivot_idx,n,0,n);
+    }
+
+    free(A);free(L);free(P),free(pivot);free(pivot_idx);
+}
+
 void compare_speed(int n, int b_size, int repeat){
     srand(time(NULL));
     myInt64 start, gt_time, block_time;
@@ -120,19 +135,29 @@ void find_best_block_size(int n, int repeat, int from, int to, int gap){
     free(A1);free(A2);free(L);free(P),free(pivot);
 }
 
-int main(){
+int main(int argc, char *argv[]){
     // test_permute();
     int n = 2000;
-    int repeat = 20;
-    int b_size = 48;
+    int repeat = 1;
+    int b_size = 32;
 
+
+    if(argc>1){
+        b_size = atoi(argv[1]);
+        cout << "b_size: " << b_size << endl;
+    }
     // test_BunchKaufman_block(n,b_size,repeat);
 
     // for(int b_size = 20; b_size < 200; b_size += 1){
         // compare_speed(n,b_size,repeat);
     // }
 
-    find_best_block_size(n,repeat,15,120,1);
+    // find_best_block_size(n,repeat,15,120,1);
+
+    srand(2);
+    test_BunchKaufman_block(n,b_size,repeat);
+    // test_BunchKaufman_noblock(n,b_size,repeat);
+
 
     return 0;
 }
