@@ -25,13 +25,13 @@ def plot_total(path, save = False, save_dir = None):
     ax.set_ylabel('[seconds]', loc = 'top', rotation="horizontal")
     ax.grid(axis="y", color='white')
     ax.set_facecolor(color='gainsboro')
-    ax.set_title('Running time of OPUS on Intel i7-7560 CPU, 2.40GHz\nCompiler: GCC 9.4.0\nFlags:-march=native\n', loc='left', fontweight="bold")
+    ax.set_title('Running time of OPUS \non Intel i7-7560 CPU 2.40GHz\nCompiler: GCC 9.4.0\nFlags:-march=native\n', loc='left', fontweight="bold")
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_visible(False)
     if save:
-        fig.tight_layout()
-        fig.savefig(save_dir, dpi = 600, format = 'eps')
+#         fig.tight_layout()
+        fig.savefig(save_dir, dpi = 600, format = 'eps', bbox_inches = 'tight')
 
 def plot_two_total(path1, path2, save = False, save_dir = None):
     with open(path1, 'r') as f:
@@ -66,7 +66,7 @@ def plot_two_total(path1, path2, save = False, save_dir = None):
     ax.set_ylabel('[seconds]', loc = 'top', rotation="horizontal")
     ax.grid(axis="y", color='white')
     ax.set_facecolor(color='gainsboro')
-    ax.set_title('Running time of OPUS on Intel i7-7560 CPU, 2.40GHz\nCompiler: GCC 9.4.0\nFlags:-march=native\n', loc='left', fontweight="bold")
+    ax.set_title('Running time of OPUS \non Intel i7-7560 CPU 2.40GHz\nCompiler: GCC 9.4.0\nFlags:-march=native\n', loc='left', fontweight="bold")
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_visible(False)
@@ -78,8 +78,8 @@ def plot_two_total(path1, path2, save = False, save_dir = None):
     ax.set_xticks(x, cost_for_each_step_total_name)
     ax.legend(title='legend', bbox_to_anchor=(1.05, 1), loc='upper left')
     if save:
-        fig.tight_layout()
-        fig.savefig(save_dir, dpi = 600, format = 'eps')
+#         fig.tight_layout()
+        fig.savefig(save_dir, dpi = 600, format = 'eps', bbox_inches = 'tight')
 
 def plot_step_performance(path, step_name, save = False, save_dir = None):
     with open(path, 'r') as f:
@@ -95,14 +95,14 @@ def plot_step_performance(path, step_name, save = False, save_dir = None):
     ax.set_ylabel('[flops/cycle]', loc = 'top', rotation="horizontal")
     ax.grid(axis="y", color='white')
     ax.set_facecolor(color='gainsboro')
-    ax.set_title('Performance of OPUS (step{}) on Intel i7-7560 CPU, 2.40GHz\nCompiler: GCC 9.4.0\nFlags:-march=native\n'.format(step_name), loc='left', fontweight="bold")
+    ax.set_title('Performance of OPUS (step{}) \non Intel i7-7560 CPU, 2.40GHz\nCompiler: GCC 9.4.0\nFlags:-march=native\n'.format(step_name), loc='left', fontweight="bold")
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_visible(False)
     ax.plot(x_list, performance, marker = "o", color = 'brown', markersize= 3)
     if save:
-        fig.tight_layout()
-        fig.savefig(save_dir, dpi = 600, format = 'eps')
+#         fig.tight_layout()
+        fig.savefig(save_dir, dpi = 600, format = 'eps', bbox_inches = 'tight')
 
 def plot_two_step_performance(path1, path2, step_name, save = False, save_dir = None):
     with open(path1, 'r') as f:
@@ -127,7 +127,7 @@ def plot_two_step_performance(path1, path2, step_name, save = False, save_dir = 
     ax.set_ylabel('[flops/cycle]', loc = 'top', rotation="horizontal")
     ax.grid(axis="y", color='white')
     ax.set_facecolor(color='gainsboro')
-    ax.set_title('Performance of OPUS (step{}) on Intel i7-7560 CPU, 2.40GHz\nCompiler: GCC 9.4.0\nFlags:-march=native\n'.format(step_name), loc='left', fontweight="bold")
+    ax.set_title('Performance of OPUS (step{}) \non Intel i7-7560 CPU, 2.40GHz\nCompiler: GCC 9.4.0\nFlags:-march=native\n'.format(step_name), loc='left', fontweight="bold")
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_visible(False)
@@ -135,8 +135,9 @@ def plot_two_step_performance(path1, path2, step_name, save = False, save_dir = 
     ax.plot(x_list, performance2, marker = "o", color = 'brown', markersize= 3, label = 'after optimization')
     ax.legend(title='legend', bbox_to_anchor=(1.05, 1), loc='upper left')
     if save:
-        fig.tight_layout()
-        fig.savefig(save_dir, dpi = 600, format = 'eps')
+#         fig.tight_layout()
+        
+        fig.savefig(save_dir, dpi = 600, format = 'eps', bbox_inches = 'tight')
     
 def plot_step_performances(path, name, x_axis_name, save = False, save_dir = None):
     with open(path, 'r') as f:
@@ -149,7 +150,7 @@ def plot_step_performances(path, name, x_axis_name, save = False, save_dir = Non
     ax.set_ylabel('[flops/cycle]', loc = 'top', rotation="horizontal")
     ax.grid(axis="y", color='white')
     ax.set_facecolor(color='gainsboro')
-    ax.set_title('Performance of {} function on Intel i7-7560 CPU, 2.40GHz\nCompiler: GCC 9.4.0\nFlags:-march=native\n'.format(name), loc='left', fontweight="bold")
+    ax.set_title('Performance of {} function \non Intel i7-7560 CPU, 2.40GHz\nCompiler: GCC 9.4.0\nFlags:-march=native\n'.format(name), loc='left', fontweight="bold")
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_visible(False)
@@ -168,8 +169,8 @@ def plot_step_performances(path, name, x_axis_name, save = False, save_dir = Non
     handles.reverse()
     ax.legend(handles=handles, title='legend', bbox_to_anchor=(1.05, 1), loc='upper left')
     if save:
-        fig.tight_layout()
-        fig.savefig(save_dir, dpi = 600, format = 'eps')
+#         fig.tight_layout()
+        fig.savefig(save_dir, dpi = 600, format = 'eps', bbox_inches = 'tight')
 
 def plot_blocksize_speedup(path, save = False, save_dir = None):
     path = '../output/blocksize_speedup.txt'
@@ -186,11 +187,11 @@ def plot_blocksize_speedup(path, save = False, save_dir = None):
     ax.set_ylabel('speedup', loc = 'top', rotation="horizontal")
     ax.grid(axis="y", color='white')
     ax.set_facecolor(color='gainsboro')
-    ax.set_title('Speedup w.r.t block size on Intel i7-7560 CPU, 2.40GHz\nCompiler: GCC 9.4.0\nFlags:-march=native\n', loc='left', fontweight="bold")
+    ax.set_title('Speedup w.r.t block size \non Intel i7-7560 CPU, 2.40GHz\nCompiler: GCC 9.4.0\nFlags:-march=native\n', loc='left', fontweight="bold")
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_visible(False)
     ax.plot(result[0], result[1], color = 'black', marker = 'o', markersize = 3)
     if save:
-        fig.tight_layout()
-        fig.savefig(save_dir, dpi = 600, format = 'eps')
+#         fig.tight_layout()
+        fig.savefig(save_dir, dpi = 600, format = 'eps', bbox_inches = 'tight')
