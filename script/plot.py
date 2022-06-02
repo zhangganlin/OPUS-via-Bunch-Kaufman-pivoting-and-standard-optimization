@@ -4,7 +4,7 @@ import numpy as np
 from matplotlib.lines import Line2D  
 import csv
 
-def plot_total(path):
+def plot_total(path, save = False, save_dir = None):
     with open(path, 'r') as f:
         result = yaml.full_load(f)
         cost_for_each_step_total = []
@@ -29,8 +29,11 @@ def plot_total(path):
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_visible(False)
+    if save:
+        fig.tight_layout()
+        fig.savefig(save_dir, format = 'eps')
 
-def plot_two_total(path1, path2):
+def plot_two_total(path1, path2, save, save_dir):
     with open(path1, 'r') as f:
         result = yaml.full_load(f)
     cost_for_each_step_total1 = []
@@ -74,8 +77,10 @@ def plot_two_total(path1, path2):
     rects2 = ax.bar(x + width/2, cost_for_each_step_total2, width, label='after optimization', color='brown')
     ax.set_xticks(x, cost_for_each_step_total_name)
     ax.legend(title='legend', bbox_to_anchor=(1.05, 1), loc='upper left')
+    if save:
+        fig.savefig(save_dir, dpi = 600, format = 'eps')
 
-def plot_step_performance(path, step_name):
+def plot_step_performance(path, step_name, save, save_dir):
     with open(path, 'r') as f:
         result = yaml.full_load(f)
     plt.figure(figsize=(20,14), dpi= 160)
@@ -94,8 +99,10 @@ def plot_step_performance(path, step_name):
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_visible(False)
     ax.plot(x_list, performance, marker = "o", color = 'brown', markersize= 3)
+    if save:
+        fig.savefig(save_dir, dpi = 600, format = 'eps')
 
-def plot_two_step_performance(path1, path2, step_name):
+def plot_two_step_performance(path1, path2, step_name, save, save_dir):
     with open(path1, 'r') as f:
         result = yaml.full_load(f)
     plt.figure(figsize=(20,14), dpi= 160)
@@ -125,8 +132,10 @@ def plot_two_step_performance(path1, path2, step_name):
     ax.plot(x_list, performance1, marker = "o", color = 'black', markersize= 3, label = 'before optimization')
     ax.plot(x_list, performance2, marker = "o", color = 'brown', markersize= 3, label = 'after optimization')
     ax.legend(title='legend', bbox_to_anchor=(1.05, 1), loc='upper left')
+    if save:
+        fig.savefig(save_dir, dpi = 600, format = 'eps')
     
-def plot_step_performances(path, name, x_axis_name):
+def plot_step_performances(path, name, x_axis_name, save, save_dir):
     with open(path, 'r') as f:
         result = yaml.full_load(f)
     result['evaluate_func_cycles'] = (np.array(result['evaluate_func_cycles']).T).tolist()
@@ -154,9 +163,11 @@ def plot_step_performances(path, name, x_axis_name):
             p, = ax.plot(x_list, performance, marker = "o", markersize= 3, label = result['evaluate_func_name'][i])
         handles.append(p)
     handles.reverse()
-    plt.legend(handles=handles, title='legend', bbox_to_anchor=(1.05, 1), loc='upper left')
+    ax.legend(handles=handles, title='legend', bbox_to_anchor=(1.05, 1), loc='upper left')
+    if save:
+        fig.savefig(save_dir, dpi = 600, format = 'eps')
 
-def plot_blocksize_speedup(path):
+def plot_blocksize_speedup(path, save, save_dir):
     path = '../output/blocksize_speedup.txt'
     with open(path, newline='') as csvfile:
         result = []
@@ -176,3 +187,5 @@ def plot_blocksize_speedup(path):
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_visible(False)
     ax.plot(result[0], result[1], color = 'black', marker = 'o', markersize = 3)
+    if save:
+        fig.savefig(save_dir, dpi = 600, format = 'eps')
