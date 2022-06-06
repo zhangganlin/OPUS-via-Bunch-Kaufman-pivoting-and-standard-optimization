@@ -172,12 +172,36 @@ def plot_step_performances(path, name, x_axis_name, save = False, save_dir = Non
 #         fig.tight_layout()
         fig.savefig(save_dir, dpi = 600, format = 'eps', bbox_inches = 'tight')
 
+def plot_multiple_step_performance(paths, step_name, save = False, save_dir = None):
+    plt.figure(figsize=(20,14), dpi= 160)
+    fig, ax = plt.subplots()
+    ax.set_xlabel('iterations')
+    ax.set_ylabel('[flops/cycle]', loc = 'top', rotation="horizontal")
+    ax.grid(axis="y", color='white')
+    ax.set_facecolor(color='gainsboro')
+    ax.set_title('Performance (with different flags) of OPUS (step{}) \non Intel i7-7560 CPU, 2.40GHz\nCompiler: GCC 9.4.0\n'.format(step_name), loc='left', fontweight="bold")
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+
+    for path in paths:
+        with open('../output/' + path + '.txt', 'r') as f:
+            result = yaml.full_load(f)
+        run_time = result['step' + step_name + '_time']
+        flops = result['step' + step_name + '_flop']
+        performance = [w/t for t, w in zip(run_time, flops)]
+        x_list = np.arange(0, len(performance), 1)
+        ax.plot(x_list, performance, marker = "o", markersize= 3, label = path)
+
+    ax.legend(title='legend', bbox_to_anchor=(1.05, 1), loc='upper left')
+    if save:
+        fig.savefig(save_dir, dpi = 600, format = 'eps', bbox_inches = 'tight')
+
 def plot_blocksize_speedup(path, save = False, save_dir = None):
     path = '../output/blocksize_speedup.txt'
     with open(path, newline='') as csvfile:
         result = []
         spamreader = csv.reader(csvfile, delimiter=',', quotechar='|')
-        print(spamreader)
         for row in spamreader:
             result.append([(float(string)) for string in row])
     result = np.array(result).T
@@ -191,7 +215,30 @@ def plot_blocksize_speedup(path, save = False, save_dir = None):
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_visible(False)
-    ax.plot(result[0], result[1], color = 'black', marker = 'o', markersize = 3)
+    ax.plot(result[0], result[1], color = 'brown', marker = 'o', markersize = 3)
     if save:
 #         fig.tight_layout()
+        fig.savefig(save_dir, dpi = 600, format = 'eps', bbox_inches = 'tight')
+
+def plot_blocksize_missrate(path, save, save_dir):
+    # block_size, cache_access, cache_miss
+    path = '../output/blocksize_cahchemiss.txt'
+    with open(path, newline='') as csvfile:
+        result = []
+        spamreader = csv.reader(csvfile, delimiter=',', quotechar='|')
+        for row in spamreader:
+            result.append([(float(string)) for string in row])
+    result = np.array(result).T
+    plt.figure(figsize=(20,14), dpi= 160)
+    fig, ax = plt.subplots()
+    ax.set_xlabel('block size(double)')
+    ax.set_ylabel('%', loc = 'top', rotation="horizontal")
+    ax.grid(axis="y", color='white')
+    ax.set_facecolor(color='gainsboro')
+    ax.set_title('Cache miss rate \non Intel i7-7560 CPU, 2.40GHz\nCompiler: GCC 9.4.0\nFlags:-march=native\n', loc='left', fontweight="bold")
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.plot(result[0][1:], result[2][1:] / result[1][1:] * 100, color = 'brown', marker = 'o', markersize = 3)
+    if save:
         fig.savefig(save_dir, dpi = 600, format = 'eps', bbox_inches = 'tight')
