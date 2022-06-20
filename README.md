@@ -1,53 +1,32 @@
-# Advancecd System Lab Project
+# Optimization by Particle swarm Using Surrogates via Bunch-Kaufman pivoting and standard optimization
+---
+Course project of Advancecd System Lab Spring 2022 in ETHZ. 
 
-## Changes
+Focus on speeding up black box optimization algorithm OPUS from pape "Particle swarm with radial basis function surrogates for expensive black-box optimization" by Rommel G. Regis.
 
-* Using BunchKaufman Linear solver instead of LU decomposition
-* Change the matrix to 1d array
-* Change `memove` to `memcpy`
-* Batch evaluation (remove procedure call)
-* evaluation and build(sharing of common subexpressions)
-  * reuse `sqrt`
-  * reuse index    
+Details about the optimization we did can be found in our project [report](22_report.pdf)
 
----------------
+### Author: [Ganlin Zhang](https://github.com/zhangganlin), [Deheng Zhang](https://github.com/dehezhang2), [Junpeng Gao](https://github.com/JunpengGao233), [Yu Hong](https://github.com/YUYHY)
 
-performance plot:
-1a. evaluate surrogate - static replacement, remove dependency and unrolling;
-1b. evaluate surrogate - vectorization; 
+### Dependency:
+* Ceres-solver [http://ceres-solver.org/](http://ceres-solver.org/installation.html)
+* Eigen [https://eigen.tuxfamily.org/](https://eigen.tuxfamily.org/index.php?title=Main_Page) (For baseline version only)
+  
+### Demo
+```bash
+mkdir build && cd build
+cmake ..
+make
+./demo
+```
+### Blocking Bunch-Kaufman Pivoting
+In this project, we use Bunch-Kaufman Pivoting to solve linear systems. To find the suitable blocking size, we also provide an automatic tool:
+```bash
+cd build
+./test_block_bk
+```
+It may take hours to find proper blocking size, but on each machine, it only need to be run once.
 
-2. Bunchkaufman pivoting for symmetric indefinite matrix factorization; 
-3. blocking - cache hit/ cache fit; 
-   4a. static replacement, remove dependency and unrolling; 
-   4b vectorization.
 
-flops count of Bunchkaufman, evaluate surrogate, blocking. 
 
-## Statistics
-
-* performance plot (flops/cycle, Gflops/s) 横坐标 (dimension or iteration)
-
-  ![IMG_52AF37E10D45-1](assets/IMG_52AF37E10D45-1.jpeg)
-
-  * evaluate surrogate:
-    * static replacement
-    * remove dependency and unrolling
-      * Execution units and ports & pipeline plot & dependency graph
-    * vectorization
-      * Vectorization plot
-  * Bunchkaufman:
-    * Flops count
-    * blocking - cache hit/ cache fit
-      * Microarchitecture
-      * Cache miss analysis (lecture 08, P 32)
-    * static replacement
-    * remove dependency and unrolling
-      * Execution units and ports & pipeline plot & dependency graph
-    * vectorization.
-
-* roofline plot
-
-* operational intensity
-
-* flags (-O2, -O3, -march=xxx, -mAVX, -m64, -fmath, RELEASE, -fno-alias, `#pragma ivdep`)
 

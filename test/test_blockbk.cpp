@@ -142,20 +142,20 @@ int main(int argc, char *argv[]){
     int b_size = 32;
 
 
-    if(argc>1){
-        b_size = atoi(argv[1]);
-        cout << "b_size: " << b_size << endl;
-    }
+    // if(argc>1){
+    //     b_size = atoi(argv[1]);
+    //     cout << "b_size: " << b_size << endl;
+    // }
     // test_BunchKaufman_block(n,b_size,repeat);
 
     // for(int b_size = 20; b_size < 200; b_size += 1){
         // compare_speed(n,b_size,repeat);
     // }
 
-    // find_best_block_size(n,repeat,15,120,1);
+    find_best_block_size(n,repeat,15,120,1);
 
-    srand(2);
-    test_BunchKaufman_block(n,b_size,repeat);
+    // srand(2);
+    // test_BunchKaufman_block(n,b_size,repeat);
     // test_BunchKaufman_noblock(n,b_size,repeat);
 
 
