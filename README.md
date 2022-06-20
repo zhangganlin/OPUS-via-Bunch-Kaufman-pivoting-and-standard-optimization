@@ -1,5 +1,5 @@
 # Optimization by Particle swarm Using Surrogates via Bunch-Kaufman pivoting and standard optimization
----
+
 Course project of Advancecd System Lab Spring 2022 in ETHZ. 
 
 Focus on speeding up black box optimization algorithm OPUS from pape "Particle swarm with radial basis function surrogates for expensive black-box optimization" by Rommel G. Regis.
